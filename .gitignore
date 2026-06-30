@@ -1,0 +1,21 @@
+# Security: Never leak private environment keys
+.env
+
+# Python: Ignore compiled bytecode (clutters the repository)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments: Ignore local virtual environments (can be hundreds of MBs)
+.venv/
+venv/
+ENV/
+env/
+
+# Operating System: Clutter files
+.DS_Store
+Thumbs.db
+
+# Vercel: Ignore local development build logs and project state
+.vercel/

@@ -1,0 +1,3131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>toxeye</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-main: #211a16;
+            --bg-main-soft: #2a211c;
+            --bg-card: #2c241f;
+            --bg-card-strong: #241c18;
+            --bg-panel: #372d27;
+            --bg-panel-soft: #42352e;
+            --bg-panel-hover: #4a3a31;
+
+            --accent: #caa982;
+            --accent-hover: #d9bea0;
+            --accent-muted: #a98a6d;
+
+            --button: #8f5f45;
+            --button-hover: #7c513c;
+
+            --border: #665044;
+            --border-soft: rgba(120, 94, 78, 0.65);
+
+            --text-main: #f2ece5;
+            --text-muted: #c9b8a8;
+            --text-soft: #a89585;
+
+            --success-bg: #303727;
+            --success-border: #7f8f68;
+            --success-text: #d9e4c4;
+
+            --danger-bg: #493028;
+            --danger-border: #a56f61;
+            --danger-text: #e5b6aa;
+
+            --warning-bg: #443320;
+            --warning-border: #b89970;
+            --warning-text: #ead2b2;
+
+            --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.22);
+            --shadow-strong: 0 28px 70px rgba(0, 0, 0, 0.34);
+        }
+
+     body.light-mode {
+    --bg-main: #dfc8ae;
+    --bg-main-soft: #d4b894;
+    --bg-card: #ead7bf;
+    --bg-card-strong: #dec4a8;
+    --bg-panel: #d6bda1;
+    --bg-panel-soft: #cdae91;
+    --bg-panel-hover: #c29d7e;
+
+    --accent: #6f4935;
+    --accent-hover: #5f3e2d;
+    --accent-muted: #8e6750;
+
+    --button: #7d523b;
+    --button-hover: #684230;
+
+    --border: #9c7860;
+    --border-soft: rgba(93, 61, 43, 0.34);
+
+    --text-main: #241812;
+    --text-muted: #4f382c;
+    --text-soft: #715646;
+
+    --success-bg: #cfd8bd;
+    --success-border: #667b53;
+    --success-text: #26331f;
+
+    --danger-bg: #d9afa1;
+    --danger-border: #8f5144;
+    --danger-text: #44241f;
+
+    --warning-bg: #ddc29c;
+    --warning-border: #8d6137;
+    --warning-text: #3d2618;
+
+    --shadow-soft: 0 18px 45px rgba(76, 50, 31, 0.14);
+    --shadow-strong: 0 28px 70px rgba(76, 50, 31, 0.22);
+}
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(202, 169, 130, 0.08), transparent 34rem),
+                radial-gradient(circle at top right, rgba(143, 95, 69, 0.07), transparent 30rem),
+                var(--bg-main);
+            color: var(--text-main);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        body.light-mode {
+    background:
+        radial-gradient(circle at top left, rgba(111, 73, 53, 0.12), transparent 34rem),
+        radial-gradient(circle at top right, rgba(255, 238, 213, 0.22), transparent 30rem),
+        linear-gradient(135deg, #dfc8ae, #d3b38d);
+}
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== Click-Controlled Left Drawer ===== */
+
+        .hamburger-zone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 150;
+        }
+
+        .logo-toggle-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            width: 3.1rem;
+            height: 3.1rem;
+            border-radius: 1rem;
+            border: 2px solid var(--border-soft);
+            background: rgba(44, 36, 31, 0.96);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+            cursor: pointer;
+            z-index: 220;
+            perspective: 700px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+
+        body.light-mode .logo-toggle-button {
+            background: rgba(255, 247, 239, 0.96);
+        }
+
+        .logo-toggle-button:hover {
+            border-color: var(--accent-muted);
+            box-shadow: 0 0 0 3px rgba(202, 169, 130, 0.14), 0 14px 35px rgba(0, 0, 0, 0.28);
+            transform: translateY(-1px);
+        }
+
+        .logo-toggle-inner {
+            position: relative;
+            width: 2rem;
+            height: 2rem;
+            transform-style: preserve-3d;
+            transition: transform 0.34s ease;
+        }
+
+        body.drawer-open .logo-toggle-button:hover .logo-toggle-inner {
+            transform: rotateY(180deg);
+        }
+
+        .logo-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+            font-size: 1.45rem;
+            line-height: 1;
+            color: var(--accent);
+        }
+
+        .logo-face-back {
+            transform: rotateY(180deg);
+            font-size: 1.4rem;
+            font-weight: 900;
+        }
+
+        .side-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 19.5rem;
+            height: 100vh;
+            padding: 5rem 1rem 1.25rem 1rem;
+            border-right: 2px solid var(--border-soft);
+            background:
+                linear-gradient(180deg, rgba(47, 37, 31, 0.985), rgba(33, 26, 22, 0.995)),
+                var(--bg-card);
+            box-shadow: 18px 0 55px rgba(0, 0, 0, 0.38);
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.26s ease, opacity 0.26s ease, background 0.25s ease;
+            z-index: 180;
+        }
+
+        body.light-mode .side-drawer {
+            background:
+                linear-gradient(180deg, rgba(255, 247, 239, 0.985), rgba(240, 223, 205, 0.995)),
+                var(--bg-card);
+            box-shadow: 18px 0 55px rgba(79, 47, 26, 0.2);
+        }
+
+        body.drawer-open .side-drawer {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer-brand {
+            padding: 0.25rem 0.25rem 1.2rem 0.25rem;
+            margin-bottom: 1rem;
+            border-bottom: 1.5px solid var(--border-soft);
+        }
+
+        .drawer-title {
+            color: var(--text-main);
+            font-weight: 900;
+            font-size: 1.35rem;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .drawer-subtitle {
+            color: var(--text-soft);
+            font-size: 0.76rem;
+            margin-top: 0.35rem;
+            line-height: 1.25;
+        }
+
+        .drawer-label {
+            color: var(--text-soft);
+            font-size: 0.7rem;
+            font-weight: 850;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            margin: 1.05rem 0 0.55rem 0.2rem;
+        }
+
+        .drawer-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .sidebar-link {
+            width: 100%;
+            min-height: 3.15rem;
+            display: flex;
+            align-items: center;
+            text-align: left;
+            padding: 0.8rem 1rem;
+            border-radius: 0.85rem;
+            border: 1.5px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            font-weight: 750;
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .sidebar-link:hover {
+            background: var(--bg-panel);
+            color: var(--text-main);
+            border-color: var(--border-soft);
+            transform: translateX(2px);
+        }
+
+        .sidebar-active {
+            background: var(--accent) !important;
+            color: #241812 !important;
+            border-color: var(--accent-muted) !important;
+            box-shadow: 0 0 0 2px rgba(202, 169, 130, 0.16);
+        }
+
+        .drawer-bottom {
+            position: absolute;
+            left: 1rem;
+            right: 1rem;
+            bottom: 1rem;
+            padding-top: 1rem;
+            border-top: 1.5px solid var(--border-soft);
+        }
+
+        .theme-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem 0.85rem;
+            border-radius: 0.9rem;
+            background: rgba(55, 45, 39, 0.62);
+            border: 1.5px solid var(--border-soft);
+        }
+
+        body.light-mode .theme-row {
+            background: rgba(255, 247, 239, 0.62);
+        }
+
+        .theme-row-title {
+            color: var(--text-main);
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .theme-row-subtitle {
+            color: var(--text-soft);
+            font-size: 0.68rem;
+            margin-top: 0.1rem;
+        }
+
+.theme-switch {
+    position: relative;
+    width: 3.35rem;
+    height: 1.82rem;
+    flex-shrink: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #211a16;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 999px;
+    transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.theme-knob {
+    position: absolute;
+    left: 0.24rem;
+    top: 50%;
+    width: 1.24rem;
+    height: 1.24rem;
+    border-radius: 999px;
+    background: #caa982;
+    transform: translateY(-50%);
+    transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.theme-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.95rem;
+    height: 0.95rem;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.theme-icon-moon {
+    color: #120c08;
+    opacity: 1;
+}
+
+.theme-icon-sun {
+    color: #f6dfbd;
+    opacity: 0;
+}
+
+.theme-switch input:checked + .theme-slider {
+    background: #d9bea0;
+    border-color: rgba(111, 73, 53, 0.42);
+}
+
+.theme-switch input:checked + .theme-slider .theme-knob {
+    transform: translate(1.48rem, -50%);
+    background: #6f4935;
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-moon {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75) rotate(-20deg);
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-sun {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+
+body.light-mode .top-card,
+body.light-mode .tool-card,
+body.light-mode .result-card {
+    background: rgba(234, 215, 191, 0.82);
+    border-color: rgba(93, 61, 43, 0.34);
+}
+
+body.light-mode .side-drawer {
+    background:
+        linear-gradient(180deg, rgba(234, 215, 191, 0.98), rgba(211, 179, 141, 0.98)),
+        var(--bg-card);
+}
+
+body.light-mode .theme-row {
+    background: rgba(214, 189, 161, 0.72);
+}
+
+body.light-mode #result-text {
+    background: rgba(223, 200, 174, 0.72);
+}
+
+body.light-mode #quiz-playable-zone {
+    background: linear-gradient(180deg, rgba(214, 189, 161, 0.92), rgba(234, 215, 191, 0.92));
+}
+
+body.light-mode .quiz-option {
+    background: rgba(223, 200, 174, 0.8);
+}
+
+body.light-mode .quiz-option:hover {
+    background: rgba(194, 157, 126, 0.55);
+}
+
+body.light-mode .input-field,
+body.light-mode .file-input {
+    background: rgba(223, 200, 174, 0.75);
+    border-color: rgba(93, 61, 43, 0.34);
+}
+
+body.light-mode .lab-choice {
+    background: rgba(223, 200, 174, 0.72);
+}
+
+body.light-mode .lab-choice:hover {
+    background: rgba(194, 157, 126, 0.55);
+}
+
+body.light-mode .lab-choice.active {
+    background: #8f6a52;
+    color: #fff3e6;
+    border-color: #6f4935;
+}
+
+body.light-mode .lab-choice.active .lab-choice-text {
+    color: rgba(255, 243, 230, 0.76);
+}
+
+body.light-mode .primary-button {
+    background: #7d523b;
+    color: #fff3e6;
+    border-color: #6f4935;
+}
+
+body.light-mode .primary-button:hover {
+    background: #684230;
+}
+
+body.light-mode .sidebar-active {
+    background: #8f6a52 !important;
+    color: #fff3e6 !important;
+    border-color: #6f4935 !important;
+}
+
+        .app-topbar {
+            min-height: 4.6rem;
+            background: transparent;
+            border-bottom: none;
+            box-shadow: none;
+        }
+
+        .page-shell {
+            width: 100%;
+            max-width: 60rem;
+            margin: 0 auto;
+            padding: 1.5rem;
+            transition: transform 0.26s ease, max-width 0.26s ease;
+        }
+
+        body.drawer-open .page-shell {
+            transform: translateX(8.5rem);
+        }
+
+        .top-card {
+            background: rgba(44, 36, 31, 0.84);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 1.45rem;
+            padding: 1.25rem 1.4rem;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(16px);
+            transition: background 0.25s ease, border-color 0.25s ease;
+        }
+
+        body.light-mode .top-card,
+        body.light-mode .tool-card,
+        body.light-mode .result-card {
+            background: rgba(255, 247, 239, 0.82);
+        }
+
+        .emergency-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            margin-bottom: 1.6rem;
+        }
+
+        .emergency-title {
+            color: var(--accent);
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+        }
+
+        .emergency-text {
+            color: var(--text-muted);
+            font-size: 0.83rem;
+            margin-top: 0.25rem;
+            line-height: 1.45;
+        }
+
+        .tool-card,
+        .result-card {
+            background: rgba(44, 36, 31, 0.82);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 1.45rem;
+            padding: 1.7rem;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(16px);
+            transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .tool-card {
+            margin-bottom: 1.6rem;
+        }
+
+        .tool-title {
+            color: var(--accent);
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .tool-subtitle {
+            color: var(--text-muted);
+            font-size: 0.83rem;
+            line-height: 1.5;
+            margin-top: -0.55rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .field-label {
+            display: block;
+            color: var(--text-main);
+            font-size: 0.86rem;
+            font-weight: 800;
+            margin-bottom: 0.45rem;
+        }
+
+        .field-helper {
+            color: var(--text-soft);
+            font-size: 0.73rem;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(55, 45, 39, 0.92);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 0.75rem;
+            color: var(--text-main);
+            padding: 0.9rem 1rem;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        body.light-mode .input-field {
+            background: rgba(240, 223, 205, 0.92);
+        }
+
+        .input-field::placeholder {
+            color: rgba(201, 184, 168, 0.62);
+        }
+
+        body.light-mode .input-field::placeholder {
+            color: rgba(95, 74, 60, 0.55);
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(202, 169, 130, 0.18);
+        }
+
+        .file-input {
+            width: 100%;
+            background: rgba(55, 45, 39, 0.92);
+            border: 1.5px dashed var(--border-soft);
+            border-radius: 0.95rem;
+            color: var(--text-muted);
+            padding: 1rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        body.light-mode .file-input {
+            background: rgba(240, 223, 205, 0.92);
+        }
+
+        .file-input::file-selector-button {
+            background: var(--accent);
+            color: #241812;
+            border: none;
+            border-radius: 0.55rem;
+            padding: 0.55rem 1rem;
+            margin-right: 1rem;
+            font-size: 0.76rem;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .primary-button {
+            width: 100%;
+            background: var(--accent);
+            color: #241812;
+            border: 1.5px solid var(--accent-muted);
+            border-radius: 0.78rem;
+            padding: 0.9rem 1rem;
+            font-weight: 900;
+            font-size: 0.94rem;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .primary-button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.16);
+        }
+
+        .secondary-button {
+            background: var(--bg-panel);
+            color: var(--text-main);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+
+        .secondary-button:hover {
+            background: var(--bg-panel-hover);
+            transform: translateY(-1px);
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1.35rem;
+        }
+
+        .lab-choice {
+            background: rgba(55, 45, 39, 0.74);
+            color: var(--text-main);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        body.light-mode .lab-choice {
+            background: rgba(240, 223, 205, 0.74);
+        }
+
+        .lab-choice:hover {
+            background: var(--bg-panel-hover);
+            transform: translateY(-1px);
+        }
+
+        .lab-choice.active {
+            background: var(--accent);
+            color: #241812;
+            border-color: var(--accent-muted);
+            box-shadow: 0 0 0 2px rgba(202, 169, 130, 0.16);
+        }
+
+        .lab-choice-title {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 900;
+        }
+
+        .lab-choice-text {
+            display: block;
+            margin-top: 0.35rem;
+            font-size: 0.74rem;
+            line-height: 1.35;
+            color: var(--text-soft);
+        }
+
+        .lab-choice.active .lab-choice-text {
+            color: rgba(36, 24, 18, 0.72);
+        }
+
+        .quiz-shell {
+            background: linear-gradient(180deg, rgba(66, 53, 46, 0.9), rgba(44, 36, 31, 0.95));
+            border-color: rgba(202, 169, 130, 0.22);
+        }
+
+        body.light-mode .quiz-shell {
+            background: linear-gradient(180deg, rgba(240, 223, 205, 0.95), rgba(255, 247, 239, 0.95));
+        }
+
+        .quiz-score-pill {
+            background: rgba(33, 26, 22, 0.7);
+            border: 1.5px solid var(--border-soft);
+            border-radius: 999px;
+            color: var(--text-main);
+            padding: 0.35rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 850;
+        }
+
+        body.light-mode .quiz-score-pill {
+            background: rgba(240, 223, 205, 0.7);
+        }
+
+        #quiz-score-val {
+            color: var(--accent);
+            font-weight: 950;
+        }
+
+        #quiz-playable-zone {
+            background: linear-gradient(180deg, rgba(58, 46, 39, 0.92), rgba(41, 33, 29, 0.96));
+            border: 1.5px solid rgba(202, 169, 130, 0.25);
+            border-radius: 1rem;
+            padding: 1.35rem;
+            text-align: center;
+        }
+
+        body.light-mode #quiz-playable-zone {
+            background: linear-gradient(180deg, rgba(240, 223, 205, 0.95), rgba(255, 247, 239, 0.95));
+        }
+
+        .quiz-option {
+            width: 100%;
+            background: rgba(51, 41, 34, 0.9);
+            border: 1.5px solid rgba(120, 94, 78, 0.7);
+            color: var(--text-main);
+            font-size: 0.82rem;
+            padding: 0.8rem 0.9rem;
+            border-radius: 0.9rem;
+            text-align: left;
+            transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        body.light-mode .quiz-option {
+            background: rgba(240, 223, 205, 0.9);
+        }
+
+        .quiz-option:hover {
+            background: var(--bg-panel-hover);
+            transform: translateY(-1px);
+        }
+
+        .quiz-option.correct {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+            border-width: 2px;
+        }
+
+        .quiz-option.wrong {
+            background: var(--danger-bg);
+            border-color: var(--danger-border);
+            color: var(--danger-text);
+            border-width: 2px;
+        }
+
+        .quiz-option.disabled {
+            opacity: 0.58;
+        }
+
+        .quiz-feedback {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            font-weight: 850;
+            padding: 0.85rem;
+            border-radius: 0.9rem;
+            text-align: center;
+            border: 2px solid var(--border-soft);
+        }
+
+        .quiz-feedback.correct {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .quiz-feedback.wrong {
+            background: var(--danger-bg);
+            border-color: var(--danger-border);
+            color: var(--danger-text);
+        }
+
+        .next-quiz-button {
+            margin-top: 0.85rem;
+            width: 100%;
+            background: var(--button);
+            color: #fff4ea;
+            border: 1.5px solid rgba(202, 169, 130, 0.18);
+            border-radius: 0.75rem;
+            padding: 0.55rem 0.9rem;
+            font-size: 0.76rem;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .next-quiz-button:hover {
+            background: var(--button-hover);
+        }
+
+        .result-card {
+            margin-top: 1.6rem;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            color: var(--text-main);
+            font-weight: 950;
+            font-size: 1.05rem;
+            margin-bottom: 0.85rem;
+        }
+
+        #pulse-dot {
+            display: inline-block;
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 999px;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        #result-text {
+            background: rgba(29, 22, 19, 0.86);
+            border: 1.5px solid var(--border-soft);
+            color: var(--text-main);
+            border-radius: 1rem;
+            padding: 1.15rem;
+            white-space: normal;
+            line-height: 1.7;
+            font-size: 0.88rem;
+            overflow-x: auto;
+        }
+
+        body.light-mode #result-text {
+            background: rgba(255, 247, 239, 0.75);
+        }
+
+        #result-text strong {
+            color: var(--accent);
+            font-weight: 950;
+        }
+
+        pre {
+            background: rgba(27, 20, 17, 0.9);
+            border-color: var(--border-soft);
+            color: var(--text-muted);
+        }
+
+        body.light-mode pre {
+            background: rgba(240, 223, 205, 0.9);
+        }
+
+        .offline-banner {
+            background: var(--warning-bg);
+            border: 1.5px solid var(--warning-border);
+            color: var(--warning-text);
+            padding: 0.85rem 1rem;
+            border-radius: 1rem;
+            margin-bottom: 1.3rem;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .mb-field {
+            margin-bottom: 1rem;
+        }
+
+        .font-mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        }
+
+        @media (max-width: 980px) {
+            body.drawer-open .page-shell {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 760px) {
+            .page-shell {
+                padding: 1rem;
+                padding-top: 1.5rem;
+            }
+
+            .side-drawer {
+                width: 82vw;
+                max-width: 20rem;
+            }
+
+            .grid-two,
+            .mode-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .emergency-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tool-card,
+            .result-card {
+                padding: 1.2rem;
+            }
+        }
+        /* Force visible centered moon/sun theme icons */
+.theme-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
+
+.theme-icon-moon {
+    color: #0f0906 !important;
+    opacity: 1 !important;
+    width: 1.08rem !important;
+    height: 1.08rem !important;
+}
+
+.theme-icon-moon path {
+    fill: #0f0906 !important;
+}
+
+.theme-icon-sun {
+    color: #f8e6c8 !important;
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-moon {
+    opacity: 0 !important;
+    transform: translate(-50%, -50%) scale(0.75) rotate(-20deg) !important;
+}
+
+.theme-switch input:checked + .theme-slider .theme-icon-sun {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg) !important;
+}
+
+/* ===== Homepage + Global Header Redesign ===== */
+
+.hamburger-zone {
+    display: none;
+}
+
+body.in-app .hamburger-zone {
+    display: block;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(33, 26, 22, 0.92), rgba(33, 26, 22, 0.58), transparent);
+    backdrop-filter: blur(14px);
+}
+
+body.light-mode .site-header {
+    background: linear-gradient(180deg, rgba(223, 200, 174, 0.9), rgba(223, 200, 174, 0.55), transparent);
+}
+
+.site-brand-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.site-title-button {
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    cursor: pointer;
+    text-transform: lowercase;
+    font-family: "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
+    transition: color 0.22s ease, letter-spacing 0.22s ease, transform 0.22s ease;
+}
+
+.site-title-button:hover {
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    transform: translateY(-1px);
+}
+
+.site-header-actions {
+    position: absolute;
+    top: 100%;
+    margin-top: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    opacity: 0;
+    transform: translateY(-0.35rem);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.site-brand-wrap:hover .site-header-actions,
+.site-brand-wrap:focus-within .site-header-actions {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.header-text-button {
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--text-soft);
+    border-radius: 999px;
+    padding: 0.42rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 850;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.header-text-button:hover {
+    color: var(--text-main);
+    background: var(--bg-panel);
+    border-color: var(--border-soft);
+    transform: translateY(-1px);
+}
+
+.site-page {
+    min-height: calc(100vh - 5rem);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.landing-center {
+    width: min(42rem, 100%);
+    text-align: center;
+}
+
+.landing-kicker {
+    color: var(--text-soft);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+}
+
+.landing-button-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.landing-button {
+    min-height: 7rem;
+    border-radius: 1.35rem;
+    border: 1.5px solid var(--border-soft);
+    background: rgba(44, 36, 31, 0.74);
+    color: var(--text-main);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(16px);
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 950;
+    letter-spacing: 0.03em;
+    text-transform: lowercase;
+    transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body.light-mode .landing-button {
+    background: rgba(234, 215, 191, 0.78);
+}
+
+.landing-button:hover {
+    transform: translateY(-4px);
+    background: var(--bg-panel);
+    border-color: var(--accent-muted);
+    box-shadow: var(--shadow-strong);
+}
+
+.account-card {
+    width: min(25rem, 100%);
+    background: rgba(44, 36, 31, 0.82);
+    border: 1.5px solid var(--border-soft);
+    border-radius: 1.45rem;
+    padding: 1.7rem;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(16px);
+}
+
+body.light-mode .account-card {
+    background: rgba(234, 215, 191, 0.82);
+}
+
+.account-title {
+    color: var(--text-main);
+    font-size: 1.45rem;
+    font-weight: 950;
+    margin-bottom: 0.3rem;
+}
+
+.account-subtitle {
+    color: var(--text-soft);
+    font-size: 0.8rem;
+    margin-bottom: 1.25rem;
+}
+
+.google-button {
+    width: 100%;
+    background: transparent;
+    color: var(--text-main);
+    border: 1.5px solid var(--border-soft);
+    border-radius: 0.78rem;
+    padding: 0.85rem 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 0.8rem;
+    transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.google-button:hover {
+    background: var(--bg-panel);
+    transform: translateY(-1px);
+}
+
+.signup-note {
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.signup-note button {
+    color: var(--accent);
+    font-weight: 900;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.about-blank {
+    width: min(50rem, 100%);
+    min-height: 28rem;
+    border-radius: 1.45rem;
+    border: 1.5px solid var(--border-soft);
+    background: rgba(44, 36, 31, 0.45);
+    box-shadow: var(--shadow-soft);
+}
+
+body.light-mode .about-blank {
+    background: rgba(234, 215, 191, 0.48);
+}
+
+.drawer-brand {
+    display: none;
+}
+
+.drawer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-row {
+    justify-content: center;
+    width: auto;
+    padding: 0.75rem;
+}
+
+.theme-row > div {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .landing-button-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-button {
+        min-height: 5rem;
+    }
+}
+
+/* Thick inverted hamburger close state */
+.logo-face {
+    font-weight: 1000 !important;
+}
+
+.logo-face-front {
+    font-size: 1.65rem !important;
+}
+
+.logo-face-back {
+    font-size: 1.45rem !important;
+}
+
+.hamburger-inverted {
+    width: 2.05rem;
+    height: 2.05rem;
+    border-radius: 0.72rem;
+    background: var(--accent);
+    color: #241812;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 1000;
+    line-height: 1;
+}
+
+/* Bigger invisible hover zone under the title */
+.site-brand-wrap {
+    padding-bottom: 3rem;
+    margin-bottom: -3rem;
+}
+
+.site-brand-wrap::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: -5rem;
+    right: -5rem;
+    height: 3.2rem;
+    background: transparent;
+    pointer-events: auto;
+}
+
+.site-header-actions {
+    z-index: 5;
+}
+
+/* Global emergency finder on every page */
+.global-emergency-wrap {
+    width: min(60rem, calc(100% - 2rem));
+    margin: 0 auto 1.25rem auto;
+    padding-top: 0.4rem;
+    position: relative;
+    z-index: 20;
+}
+
+.global-emergency-card-inner {
+    border-color: #8f5144 !important;
+    border-width: 2.5px !important;
+    box-shadow: 0 0 0 2px rgba(143, 81, 68, 0.16), var(--shadow-soft) !important;
+}
+
+.emergency-title {
+    color: #c47a64 !important;
+}
+
+.emergency-button {
+    width: auto !important;
+    min-width: 13rem;
+}
+
+body.light-mode .global-emergency-card-inner {
+    border-color: #8f5144 !important;
+    background: rgba(225, 196, 170, 0.86) !important;
+}
+
+@media (max-width: 760px) {
+    .emergency-button {
+        width: 100% !important;
+    }
+}
+
+/* Homepage text-style navigation */
+.site-page {
+    position: relative;
+}
+
+.landing-kicker {
+    display: none !important;
+}
+
+.landing-center {
+    margin-top: -3rem;
+}
+
+.landing-button-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: center;
+    gap: 1.15rem !important;
+}
+
+.landing-button {
+    min-height: auto !important;
+    width: auto !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    color: var(--text-muted) !important;
+    padding: 0.35rem 1.4rem !important;
+    border-radius: 999px !important;
+    font-size: clamp(1.45rem, 4vw, 2.35rem) !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.055em !important;
+    text-transform: lowercase !important;
+    cursor: pointer;
+    transition: color 0.22s ease, letter-spacing 0.22s ease, transform 0.22s ease, background 0.22s ease;
+}
+
+.landing-button:hover {
+    color: var(--accent) !important;
+    letter-spacing: 0.11em !important;
+    transform: translateY(-2px) !important;
+    background: rgba(202, 169, 130, 0.08) !important;
+}
+
+body.light-mode .landing-button:hover {
+    background: rgba(111, 73, 53, 0.07) !important;
+}
+
+.landing-theme-bottom {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    z-index: 60;
+    padding: 0.75rem;
+    border-radius: 999px;
+    background: rgba(44, 36, 31, 0.42);
+    border: 1.5px solid var(--border-soft);
+    backdrop-filter: blur(12px);
+}
+
+body.light-mode .landing-theme-bottom {
+    background: rgba(234, 215, 191, 0.56);
+}
+
+/* ===== Fix visible toxeye dropdown, homepage theme switch, and hamburger close icon ===== */
+
+/* 1. Visible smooth dropdown under toxeye */
+.site-brand-wrap {
+    position: relative !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.site-brand-wrap::after {
+    display: none !important;
+}
+
+.site-header-actions {
+    position: absolute !important;
+    top: calc(100% + 0.85rem) !important;
+    left: 50% !important;
+    width: 14rem !important;
+    margin-top: 0 !important;
+    padding: 0.8rem !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.55rem !important;
+
+    background: rgba(44, 36, 31, 0.86) !important;
+    border: 1.5px solid var(--border-soft) !important;
+    border-radius: 1.05rem !important;
+    box-shadow: var(--shadow-soft) !important;
+    backdrop-filter: blur(16px) !important;
+
+    opacity: 0 !important;
+    transform: translate(-50%, -0.75rem) scale(0.96) !important;
+    pointer-events: none !important;
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s ease,
+        background 0.22s ease,
+        border-color 0.22s ease !important;
+}
+
+body.light-mode .site-header-actions {
+    background: rgba(234, 215, 191, 0.88) !important;
+}
+
+.site-brand-wrap:hover .site-header-actions,
+.site-brand-wrap:focus-within .site-header-actions {
+    opacity: 1 !important;
+    transform: translate(-50%, 0) scale(1) !important;
+    pointer-events: auto !important;
+}
+
+.header-text-button {
+    width: 100% !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    color: var(--text-muted) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 999px !important;
+
+    font-size: 1rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: lowercase !important;
+
+    cursor: pointer !important;
+    transition:
+        color 0.2s ease,
+        letter-spacing 0.2s ease,
+        transform 0.2s ease,
+        background 0.2s ease !important;
+}
+
+.header-text-button:hover {
+    color: var(--accent) !important;
+    letter-spacing: 0.1em !important;
+    transform: translateY(-1px) !important;
+    background: rgba(202, 169, 130, 0.08) !important;
+}
+
+body.light-mode .header-text-button:hover {
+    background: rgba(111, 73, 53, 0.07) !important;
+}
+
+
+/* 2. Force homepage theme switch to stay horizontal */
+.landing-theme-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.landing-theme-bottom .theme-switch {
+    position: relative !important;
+    display: block !important;
+    width: 3.35rem !important;
+    height: 1.82rem !important;
+    min-width: 3.35rem !important;
+    min-height: 1.82rem !important;
+    max-width: 3.35rem !important;
+    max-height: 1.82rem !important;
+}
+
+.landing-theme-bottom .theme-slider {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 999px !important;
+}
+
+.landing-theme-bottom .theme-knob {
+    position: absolute !important;
+    left: 0.24rem !important;
+    top: 50% !important;
+    width: 1.24rem !important;
+    height: 1.24rem !important;
+    transform: translateY(-50%) !important;
+}
+
+.landing-theme-bottom .theme-switch input:checked + .theme-slider .theme-knob {
+    transform: translate(1.48rem, -50%) !important;
+}
+
+
+/* 3. Make hamburger inverted close state fill the whole icon box neatly */
+.logo-toggle-button {
+    overflow: hidden !important;
+}
+
+.logo-toggle-inner {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.logo-face {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.logo-face-front {
+    font-size: 1.75rem !important;
+    font-weight: 1000 !important;
+}
+
+.logo-face-back {
+    font-size: 1.65rem !important;
+    font-weight: 1000 !important;
+}
+
+.hamburger-inverted {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0.82rem !important;
+
+    background: var(--accent) !important;
+    color: #241812 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    font-size: 1.55rem !important;
+    font-weight: 1000 !important;
+    line-height: 1 !important;
+}
+
+/* ===== Fix dropdown hover area + remove outer theme-toggle outlines ===== */
+
+/* Keep account/about dropdown visible when hovering anywhere on the dropdown box */
+.site-header-actions:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, 0) scale(1) !important;
+    pointer-events: auto !important;
+}
+
+/* Add a tiny invisible bridge so moving from toxeye to the dropdown does not close it */
+.site-header-actions::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -1rem;
+    height: 1rem;
+    background: transparent;
+}
+
+/* Make the entire dropdown box behave like the hover target */
+.site-header-actions {
+    pointer-events: none !important;
+}
+
+.site-brand-wrap:hover .site-header-actions,
+.site-brand-wrap:focus-within .site-header-actions,
+.site-header-actions:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, 0) scale(1) !important;
+    pointer-events: auto !important;
+}
+
+/* Make each account/about row have a full-width invisible hitbox */
+.header-text-button {
+    width: 100% !important;
+    display: block !important;
+    text-align: center !important;
+}
+
+/* Remove the extra outer outline around the homepage theme switch */
+.landing-theme-bottom {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+}
+
+/* Remove the extra outer outline around the drawer theme switch */
+.theme-row {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Remove the divider/outer frame above the drawer theme switch */
+.drawer-bottom {
+    border-top: none !important;
+    padding-top: 0 !important;
+}
+
+/* Keep only the actual slider outline */
+.theme-slider {
+    border: 1.5px solid var(--border-soft) !important;
+}
+
+/* Make toxeye dropdown hover-only, not click/focus-sticky */
+.site-brand-wrap:focus-within .site-header-actions {
+    opacity: 0 !important;
+    transform: translate(-50%, -0.75rem) scale(0.96) !important;
+    pointer-events: none !important;
+}
+
+.site-brand-wrap:hover .site-header-actions,
+.site-header-actions:hover {
+    opacity: 1 !important;
+    transform: translate(-50%, 0) scale(1) !important;
+    pointer-events: auto !important;
+}
+    </style>
+</head>
+
+<body>
+    <div class="hamburger-zone">
+        <button type="button" onclick="toggleDrawer(event)" class="logo-toggle-button" aria-label="Open or close navigation menu">
+            <span class="logo-toggle-inner">
+                <span class="logo-face logo-face-front">☰</span>
+<span class="logo-face logo-face-back">
+    <span class="hamburger-inverted">☰</span>
+</span>
+            </span>
+        </button>
+
+        <nav class="side-drawer" aria-label="Main navigation">
+    <div id="drawer-home-group" class="drawer-section-group">
+        <div class="drawer-label">Home</div>
+
+        <div class="drawer-nav">
+            <button onclick="switchTab('analyzer')" id="tab-analyzer" class="sidebar-link sidebar-active">
+                <strong>Toxin First Aid</strong>
+            </button>
+
+            <button onclick="switchTab('identifier')" id="tab-identifier" class="sidebar-link">
+                <strong>Symptom Checker</strong>
+            </button>
+
+            <button onclick="switchTab('scanner')" id="tab-scanner" class="sidebar-link">
+                <strong>Label Scanner</strong>
+            </button>
+        </div>
+    </div>
+
+    <div id="drawer-learning-group" class="drawer-section-group hidden">
+        <div class="drawer-label">Learning</div>
+
+        <div class="drawer-nav">
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="sidebar-link">
+                <strong>Safety Quiz</strong>
+            </button>
+        </div>
+    </div>
+
+    <div id="drawer-labs-group" class="drawer-section-group hidden">
+        <div class="drawer-label">Labs</div>
+
+        <div class="drawer-nav">
+            <button onclick="switchTab('lab')" id="tab-lab" class="sidebar-link">
+                <strong>Labs & Liver</strong>
+            </button>
+        </div>
+    </div>
+
+    <div class="drawer-bottom">
+        <div class="theme-row">
+            <label class="theme-switch" aria-label="Toggle site theme">
+                <input type="checkbox" id="theme-toggle" onchange="toggleTheme(this.checked)">
+                <span class="theme-slider">
+                    <span class="theme-knob">
+                        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#0f0906" d="M20.2 14.4A8.2 8.2 0 0 1 9.6 3.8a.65.65 0 0 0-.78-.86A9.6 9.6 0 1 0 21.06 15.18a.65.65 0 0 0-.86-.78Z"></path>
+                        </svg>
+
+                        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4" fill="currentColor"></circle>
+                            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
+                        </svg>
+                    </span>
+                </span>
+            </label>
+        </div>
+    </div>
+</nav>
+    </div>
+
+    <header class="site-header">
+    <div class="site-brand-wrap">
+        <button type="button" onclick="showLanding(); this.blur();" class="site-title-button">
+    toxeye
+</button>
+
+        <div class="site-header-actions">
+            <button type="button" onclick="showAccount()" class="header-text-button">account</button>
+            <button type="button" onclick="showAbout()" class="header-text-button">about</button>
+        </div>
+    </div>
+</header>
+
+<section id="global-emergency-card" class="global-emergency-wrap">
+    <div class="top-card emergency-card global-emergency-card-inner">
+        <div>
+            <h3 class="emergency-title">Live Emergency Contact Finder</h3>
+            <p id="emergency-contact-text" class="emergency-text">
+                Click the button to scan your current zone and pull local crisis numbers instantly.
+            </p>
+        </div>
+
+        <button onclick="detectEmergencyContact()" class="primary-button emergency-button">
+            Find My Poison Control
+        </button>
+    </div>
+</section>
+
+    <section id="landing-page" class="site-page">
+    <div class="landing-center">
+        <div class="landing-button-grid">
+            <button type="button" onclick="enterSection('home')" class="landing-button">
+                home
+            </button>
+
+            <button type="button" onclick="enterSection('learning')" class="landing-button">
+                learning
+            </button>
+
+            <button type="button" onclick="enterSection('labs')" class="landing-button">
+                labs
+            </button>
+        </div>
+    </div>
+
+    <div class="landing-theme-bottom">
+        <label class="theme-switch" aria-label="Toggle site theme">
+            <input type="checkbox" id="theme-toggle-home" onchange="toggleTheme(this.checked)">
+            <span class="theme-slider">
+                <span class="theme-knob">
+                    <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#0f0906" d="M20.2 14.4A8.2 8.2 0 0 1 9.6 3.8a.65.65 0 0 0-.78-.86A9.6 9.6 0 1 0 21.06 15.18a.65.65 0 0 0-.86-.78Z"></path>
+                    </svg>
+
+                    <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" fill="currentColor"></circle>
+                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
+                    </svg>
+                </span>
+            </span>
+        </label>
+    </div>
+</section>
+
+<section id="account-page" class="site-page hidden">
+    <div id="auth-forms-card" class="account-card">
+        <form id="login-form" onsubmit="submitLogin(event)">
+            <h2 class="account-title">log in</h2>
+
+            <div class="mb-field">
+                <label class="field-label">Email</label>
+                <input type="email" id="login-email" placeholder="you@example.com" class="input-field" required>
+            </div>
+
+            <div class="mb-field">
+                <label class="field-label">Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password" class="input-field" required>
+            </div>
+
+            <button type="submit" class="primary-button">Log In</button>
+
+            <button type="button" onclick="startGoogleLogin()" class="google-button">
+                Continue with Google
+            </button>
+
+            <p class="signup-note">
+                Want to sign up instead?
+                <button type="button" onclick="showSignupForm()">Create account</button>
+            </p>
+        </form>
+
+        <form id="signup-form" onsubmit="submitSignup(event)" class="hidden">
+            <h2 class="account-title">sign up</h2>
+
+            <div class="mb-field">
+                <label class="field-label">Email</label>
+                <input type="email" id="signup-email" placeholder="you@example.com" class="input-field" required>
+            </div>
+
+            <div class="mb-field">
+                <label class="field-label">Password</label>
+                <input type="password" id="signup-password" placeholder="At least 8 characters" class="input-field" required>
+            </div>
+
+            <button type="submit" class="primary-button">Create Account</button>
+
+            <p class="signup-note">
+                Already have an account?
+                <button type="button" onclick="showLoginForm()">Log in</button>
+            </p>
+        </form>
+
+        <p id="auth-message" class="signup-note"></p>
+    </div>
+
+    <div id="logged-in-card" class="account-card hidden">
+        <h2 class="account-title">account</h2>
+        <p class="signup-note" style="margin-top: 0;">
+            Logged in as <strong id="logged-in-email"></strong>
+        </p>
+
+        <button type="button" onclick="logoutUser()" class="primary-button">
+            Log Out
+        </button>
+    </div>
+</section>
+
+<section id="about-page" class="site-page hidden">
+    <div class="about-blank"></div>
+</section>
+
+<main id="app-workspace" class="page-shell hidden">
+        <div id="offline-banner" class="offline-banner hidden">
+            ⚠️ <strong>Offline Mode Active:</strong> You are currently disconnected from the internet. The app is running on its native internal backup database.
+        </div>
+
+        
+
+        <section id="form-analyzer" class="tool-card">
+            <h2 class="tool-title">Analyze Known Substance</h2>
+
+            <form onsubmit="submitForm(event, '/api/analyze')">
+                <input type="hidden" name="mode" value="analyzer">
+
+                <div class="mb-field">
+                    <label class="field-label">Substance / Chemical Name</label>
+                    <input type="text" name="substance" placeholder="e.g., Bleach, Vapor Rub, Lily Flower" required class="input-field">
+                </div>
+
+                <div class="grid-two mb-field">
+                    <div>
+                        <label class="field-label">Exposure Duration</label>
+                        <input type="text" name="duration" placeholder="e.g., 5 mins, Brief touch" required class="input-field">
+                    </div>
+
+                    <div>
+                        <label class="field-label">Contact Method</label>
+                        <select name="contact_method" class="input-field">
+                            <option value="Skin contact">Skin contact</option>
+                            <option value="Inhaled">Inhaled</option>
+                            <option value="Swallowed">Swallowed</option>
+                            <option value="Eye contact">Eye contact</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="primary-button">Get Safety Insights</button>
+            </form>
+        </section>
+
+        <section id="form-identifier" class="tool-card hidden">
+            <h2 class="tool-title">Identify Hazard by Symptoms</h2>
+
+            <form onsubmit="submitForm(event, '/api/identify')">
+                <input type="hidden" name="mode" value="identifier">
+
+                <div class="mb-field">
+                    <label class="field-label">Physical Symptoms Experienced</label>
+                    <input type="text" name="symptoms" placeholder="e.g., dizziness, skin rash, burning throat" required class="input-field">
+                </div>
+
+                <div class="mb-field">
+                    <label class="field-label">Contextual Environment / Activity</label>
+                    <input type="text" name="context" placeholder="e.g., cleaning the bathroom, working in garage, playing in woods" required class="input-field">
+                </div>
+
+                <button type="submit" class="primary-button">Analyze Symptoms</button>
+            </form>
+        </section>
+
+        <section id="form-scanner" class="tool-card hidden">
+            <h2 class="tool-title">Image Vision Identifier</h2>
+            <p class="tool-subtitle">Upload a clear picture of a chemical ingredient deck or container warning labels for instant AI scanning.</p>
+
+            <form onsubmit="submitPhotoForm(event, '/api/scan')">
+                <div class="mb-field">
+                    <label class="field-label">Select Hazard Document/Label Image</label>
+                    <input type="file" name="image" accept="image/png, image/jpeg" required class="file-input">
+                </div>
+
+                <button type="submit" class="primary-button">Upload & Run Vision AI Scan</button>
+            </form>
+        </section>
+
+        <section id="form-quiz" class="tool-card quiz-shell hidden">
+            <div class="flex justify-between items-center mb-4 gap-4">
+                <h2 class="tool-title" style="margin-bottom: 0;">Household Warning Signs Quiz</h2>
+                <div class="quiz-score-pill">
+                    Score: <span id="quiz-score-val">0</span>
+                </div>
+            </div>
+
+            <div id="quiz-playable-zone">
+                <div id="quiz-symbol-avatar" class="text-6xl mb-4 mt-2">☠️</div>
+                <h3 id="quiz-question-text" class="text-base font-bold mb-6">What does this symbol mean on a container label?</h3>
+                <div id="quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div id="quiz-feedback" class="mt-4 text-sm font-semibold hidden"></div>
+            </div>
+        </section>
+
+        <section id="form-lab" class="tool-card hidden">
+            <h2 class="tool-title">Labs & Liver Analysis</h2>
+            <p class="tool-subtitle">
+                Choose between a general lab-pattern analysis or a liver-specific toxicity analysis using the DILIrank dataset.
+            </p>
+
+            <div class="mode-grid">
+                <button type="button" onclick="switchLabMode('general')" id="lab-mode-general" class="lab-choice active">
+                    <span class="lab-choice-title">General Lab Pattern Analyzer</span>
+                    <span class="lab-choice-text">Broad organ/lab interpretation from typed values or one uploaded report.</span>
+                </button>
+
+                <button type="button" onclick="switchLabMode('liver')" id="lab-mode-liver" class="lab-choice">
+                    <span class="lab-choice-title">Liver-Specific Toxicity Analyzer</span>
+                    <span class="lab-choice-text">Uses DILIrank to estimate liver-focused toxin risk with optional multiple files.</span>
+                </button>
+            </div>
+
+            <div id="lab-general-panel">
+                <h3 class="text-lg font-black mb-1">General Lab Pattern Analyzer</h3>
+                <p class="tool-subtitle" style="margin-top: 0; margin-bottom: 1rem;">
+                    Use this for broad lab interpretation across major organ systems. This does not use the DILIrank dataset.
+                </p>
+
+                <form onsubmit="submitLabForm(event, '/api/lab_analyze')">
+                    <input type="hidden" name="mode" value="lab">
+
+                    <div class="grid-two mb-field">
+                        <div>
+                            <label class="field-label">Suspected Chemical / Toxin</label>
+                            <input type="text" name="toxin" placeholder="e.g., Acetaminophen, Ethylene Glycol" required class="input-field">
+                        </div>
+
+                        <div>
+                            <label class="field-label">Estimated Exposure Amount <span class="field-helper">(Optional)</span></label>
+                            <input type="text" name="amount" placeholder="e.g., 500mg, 30ml" class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="mb-field">
+                        <label class="field-label">Laboratory Metrics & Findings <span class="field-helper">(Type values, upload a report, or do both)</span></label>
+                        <textarea name="lab_values" rows="4" placeholder="Type out key abnormal readouts, e.g.:&#10;Liver - ALT: 350 U/L, AST: 410 U/L&#10;Kidney - Creatinine: 2.4 mg/dL" class="input-field font-mono"></textarea>
+                    </div>
+
+                    <div class="mb-field">
+                        <label class="field-label">Upload Lab Report <span class="field-helper">(Optional: PDF, DOCX, PNG, JPG, JPEG)</span></label>
+                        <input type="file" name="lab_report" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" class="file-input">
+                        <p class="field-helper mt-2">For scanned PDFs, the app will try to read the first few pages using Vision AI.</p>
+                    </div>
+
+                    <button type="submit" class="primary-button">Evaluate General Lab Patterns</button>
+                </form>
+            </div>
+
+            <div id="lab-liver-panel" class="hidden">
+                <h3 class="text-lg font-black mb-1">Liver-Specific Toxicity Analyzer</h3>
+                <p class="tool-subtitle" style="margin-top: 0; margin-bottom: 1rem;">
+                    Use this when you specifically want to know how a toxin, drug, supplement, or chemical may affect the liver. This uses your DILIrank dataset.
+                </p>
+
+                <form onsubmit="submitLiverImpactForm(event, '/api/liver_impact')">
+                    <input type="hidden" name="mode" value="liverimpact">
+
+                    <div class="grid-two mb-field">
+                        <div>
+                            <label class="field-label">Suspected Toxin / Drug / Chemical</label>
+                            <input type="text" name="toxin" placeholder="e.g., Acetaminophen, Acarbose, Methotrexate" required class="input-field">
+                        </div>
+
+                        <div>
+                            <label class="field-label">Amount / Dose <span class="field-helper">(Optional)</span></label>
+                            <input type="text" name="amount" placeholder="e.g., 500mg, unknown, large amount" class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="grid-two mb-field">
+                        <div>
+                            <label class="field-label">Time Since Exposure <span class="field-helper">(Optional)</span></label>
+                            <input type="text" name="time_since_exposure" placeholder="e.g., 2 hours, 1 day, several weeks" class="input-field">
+                        </div>
+
+                        <div>
+                            <label class="field-label">Exposure Method <span class="field-helper">(Optional)</span></label>
+                            <select name="exposure_method" class="input-field">
+                                <option value="">Select if known</option>
+                                <option value="Swallowed / ingestion">Swallowed / ingestion</option>
+                                <option value="Inhaled">Inhaled</option>
+                                <option value="Skin contact">Skin contact</option>
+                                <option value="Injection / medication">Injection / medication</option>
+                                <option value="Unknown">Unknown</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-field">
+                        <label class="field-label">Symptoms <span class="field-helper">(Optional)</span></label>
+                        <textarea name="symptoms" rows="3" placeholder="e.g., nausea, fatigue, right upper abdominal pain, jaundice, dark urine, itching" class="input-field"></textarea>
+                    </div>
+
+                    <div class="mb-field">
+                        <label class="field-label">Typed Liver Labs <span class="field-helper">(Optional)</span></label>
+                        <textarea name="typed_liver_labs" rows="4" placeholder="e.g.:&#10;ALT: 350 U/L&#10;AST: 410 U/L&#10;ALP: 180 U/L&#10;Total bilirubin: 3.2 mg/dL&#10;INR: 1.4" class="input-field font-mono"></textarea>
+                    </div>
+
+                    <div class="mb-field">
+                        <label class="field-label">Upload Liver-Related Files <span class="field-helper">(Optional, multiple allowed)</span></label>
+                        <input type="file" name="liver_files" multiple accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" class="file-input">
+                        <p class="field-helper mt-2">
+                            Upload liver blood tests, toxicology reports, or ultrasound reports. Raw ultrasound images are not treated as a diagnosis.
+                        </p>
+                    </div>
+
+                    <button type="submit" class="primary-button">Analyze Liver-Specific Toxicity</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="result-box" class="result-card hidden">
+            <h3 class="result-header">
+                <span id="pulse-dot" class="animate-pulse"></span>
+                <span id="result-header-text">AI Assessment Result:</span>
+            </h3>
+
+            <div id="result-text"></div>
+        </section>
+    </main>
+
+    <script>
+        const OFFLINE_FIRST_AID_DATABASE = {
+            "bleach": "⚠️ OFFLINE BLEACH SUMMARY:\n\n1) Flush target contact zones for 15 minutes.\n2) If swallowed, do not induce vomiting.\n\n[Confidence Score Unavailable Offline]",
+            "vape liquid": "⚠️ OFFLINE NICOTINE SUMMARY:\n\n1) High risk membrane absorption. Rinse mouth and skin instantly.\n\n[Confidence Score Unavailable Offline]"
+        };
+
+        const QUIZ_QUESTIONS = [
+            {
+                symbol: "🧴",
+                question: "You find a bottle under the sink with no label. What is the safest thing to do?",
+                options: [
+                    "Open it carefully and check what it smells like",
+                    "Move it to the counter so someone sees it",
+                    "Leave it alone and tell an adult",
+                    "Pour a little out to see what it is"
+                ],
+                correct: 2,
+                tip: "If a container has no label, do not touch or open it. Ask an adult."
+            },
+            {
+                symbol: "🧪",
+                question: "Why is it unsafe to mix different cleaning products?",
+                options: [
+                    "They might stain the sink or counter",
+                    "They might stop cleaning properly",
+                    "They could create harmful fumes or reactions",
+                    "They might become too watery"
+                ],
+                correct: 2,
+                tip: "Some cleaners can react with each other and make dangerous fumes."
+            },
+            {
+                symbol: "💊",
+                question: "You find a pill on the floor. What should you do?",
+                options: [
+                    "Pick it up and give it to an adult",
+                    "Put it in the nearest medicine bottle",
+                    "Throw it in the trash by yourself",
+                    "Leave it there because it is probably old"
+                ],
+                correct: 0,
+                tip: "Never guess what a pill is. Give it to an adult."
+            },
+            {
+                symbol: "👁️",
+                question: "Someone accidentally gets cleaning spray in their eye. What should happen first?",
+                options: [
+                    "Tell an adult and rinse the eye with clean water",
+                    "Blink a lot until it feels better",
+                    "Wipe the eye with a towel",
+                    "Wait a few minutes to see if it goes away"
+                ],
+                correct: 0,
+                tip: "Eye exposure needs quick help. Tell an adult immediately."
+            },
+            {
+                symbol: "🌫️",
+                question: "You walk into a room and notice a very strong chemical smell. What should you do?",
+                options: [
+                    "Stay in the room but cover your nose",
+                    "Leave the area and tell an adult",
+                    "Open nearby bottles to find the smell",
+                    "Spray air freshener to cover it up"
+                ],
+                correct: 1,
+                tip: "Strong chemical smells may be unsafe to breathe."
+            },
+            {
+                symbol: "🏷️",
+                question: "Why should chemicals and cleaners stay in their original containers?",
+                options: [
+                    "The original container keeps them from spilling",
+                    "The label tells people what it is and how to use it safely",
+                    "The original bottle makes it easier to pour",
+                    "The color of the bottle keeps it fresh"
+                ],
+                correct: 1,
+                tip: "Labels give important safety warnings and instructions."
+            },
+            {
+                symbol: "🌿",
+                question: "A product says “natural” on the label. What does that mean?",
+                options: [
+                    "It is always safe to touch or taste",
+                    "It is safe as long as it smells nice",
+                    "It can still be harmful if used the wrong way",
+                    "It does not need warning labels"
+                ],
+                correct: 2,
+                tip: "Natural does not always mean safe."
+            },
+            {
+                symbol: "🚨",
+                question: "Someone accidentally swallows something that might be poisonous. What should you do?",
+                options: [
+                    "Wait to see if they start feeling sick",
+                    "Tell an adult right away",
+                    "Give them food to help settle their stomach",
+                    "Look up the product later if symptoms happen"
+                ],
+                correct: 1,
+                tip: "Tell an adult immediately. Do not wait for symptoms."
+            },
+            {
+                symbol: "❓",
+                question: "What is the safest rule for something you do not recognize?",
+                options: [
+                    "If it looks clean, it is probably safe",
+                    "If it is in your house, it is probably safe",
+                    "If someone else touched it, it is probably fine",
+                    "If you are not sure what it is, do not touch it"
+                ],
+                correct: 3,
+                tip: "When unsure, stop and ask an adult."
+            },
+            {
+                symbol: "🧼",
+                question: "You use a cleaning wipe on a table. What should you do afterward?",
+                options: [
+                    "Wash your hands",
+                    "Touch your face only after it dries",
+                    "Put the wipe back in the container",
+                    "Use the same wipe on your food area"
+                ],
+                correct: 0,
+                tip: "Cleaning products can stay on your hands, so wash them afterward."
+            },
+            {
+                symbol: "🐶",
+                question: "Why should medicines and cleaners be kept away from pets?",
+                options: [
+                    "Pets may chew, lick, or swallow unsafe things",
+                    "Pets might knock them over and make a mess",
+                    "Pets do not like strong smells",
+                    "Pets might hide them somewhere"
+                ],
+                correct: 0,
+                tip: "Pets can be harmed by things that seem normal to humans."
+            },
+            {
+                symbol: "🥤",
+                question: "Why is it unsafe to put chemicals in a cup or food container?",
+                options: [
+                    "It might spill more easily",
+                    "Someone might mistake it for food or drink",
+                    "It makes the chemical weaker",
+                    "The container might change color"
+                ],
+                correct: 1,
+                tip: "Chemicals should never be stored in food or drink containers."
+            },
+            {
+                symbol: "🧽",
+                question: "You see bathroom cleaner left open on the floor. What should you do?",
+                options: [
+                    "Close it and put it away yourself",
+                    "Leave the room and tell an adult",
+                    "Kick it to the side so no one steps on it",
+                    "Smell it to check if it spilled"
+                ],
+                correct: 1,
+                tip: "If a chemical is open or spilled, get an adult."
+            },
+            {
+                symbol: "🍬",
+                question: "Some medicine looks like candy. What is the safest rule?",
+                options: [
+                    "Only taste it if you know where it came from",
+                    "Never eat medicine unless an adult gives it to you correctly",
+                    "It is safe if it is colorful",
+                    "It is okay if it is just one piece"
+                ],
+                correct: 1,
+                tip: "Medicine is not candy, even when it looks or tastes sweet."
+            },
+            {
+                symbol: "⚠️",
+                question: "What should you do if a bottle has a warning label you do not understand?",
+                options: [
+                    "Ignore it if the bottle looks normal",
+                    "Ask an adult before touching or using it",
+                    "Try a small amount first",
+                    "Use it only outside"
+                ],
+                correct: 1,
+                tip: "Warning labels are there for safety. Ask an adult if you are unsure."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answeredQuestions = 0;
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        function updateNetworkStatus() {
+            const banner = document.getElementById('offline-banner');
+            if (!navigator.onLine) {
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        updateNetworkStatus();
+        initializeTheme();
+        function toggleDrawer(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    document.body.classList.toggle('drawer-open');
+}
+
+document.addEventListener('click', function(event) {
+    const drawer = document.querySelector('.side-drawer');
+    const drawerToggle = document.querySelector('.logo-toggle-button');
+
+    const clickedInsideDrawer = drawer && drawer.contains(event.target);
+    const clickedDrawerToggle = drawerToggle && drawerToggle.contains(event.target);
+
+    if (!document.body.classList.contains('drawer-open')) {
+        return;
+    }
+
+    if (clickedInsideDrawer || clickedDrawerToggle) {
+        return;
+    }
+
+    document.body.classList.remove('drawer-open');
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        document.body.classList.remove('drawer-open');
+    }
+});
+
+    
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        document.body.classList.remove('drawer-open');
+    }
+});
+
+        function showSitePage(pageName) {
+    const landingPage = document.getElementById('landing-page');
+    const accountPage = document.getElementById('account-page');
+    const aboutPage = document.getElementById('about-page');
+    const appWorkspace = document.getElementById('app-workspace');
+
+    landingPage.classList.add('hidden');
+    accountPage.classList.add('hidden');
+    aboutPage.classList.add('hidden');
+    appWorkspace.classList.add('hidden');
+
+    document.body.classList.remove('in-app');
+    document.body.classList.remove('drawer-open');
+
+    if (pageName === 'landing') {
+        landingPage.classList.remove('hidden');
+    }
+
+    if (pageName === 'account') {
+        accountPage.classList.remove('hidden');
+    }
+
+    if (pageName === 'about') {
+        aboutPage.classList.remove('hidden');
+    }
+
+    if (pageName === 'app') {
+        appWorkspace.classList.remove('hidden');
+        document.body.classList.add('in-app');
+    }
+}
+
+function showLanding() {
+    showSitePage('landing');
+}
+
+function showAccount() {
+    showSitePage('account');
+    refreshAuthUI();
+}
+
+function showAbout() {
+    showSitePage('about');
+}
+
+function setDrawerSection(sectionName) {
+    const homeGroup = document.getElementById('drawer-home-group');
+    const learningGroup = document.getElementById('drawer-learning-group');
+    const labsGroup = document.getElementById('drawer-labs-group');
+
+    homeGroup.classList.add('hidden');
+    learningGroup.classList.add('hidden');
+    labsGroup.classList.add('hidden');
+
+    if (sectionName === 'home') {
+        homeGroup.classList.remove('hidden');
+    }
+
+    if (sectionName === 'learning') {
+        learningGroup.classList.remove('hidden');
+    }
+
+    if (sectionName === 'labs') {
+        labsGroup.classList.remove('hidden');
+    }
+}
+
+function enterSection(sectionName) {
+    showSitePage('app');
+    setDrawerSection(sectionName);
+
+    if (sectionName === 'home') {
+        switchTab('analyzer');
+    }
+
+    if (sectionName === 'learning') {
+        switchTab('quiz');
+    }
+
+    if (sectionName === 'labs') {
+        switchTab('lab');
+    }
+}
+
+        function initializeTheme() {
+    const savedTheme = localStorage.getItem('toxaware-theme');
+    const drawerThemeToggle = document.getElementById('theme-toggle');
+    const homeThemeToggle = document.getElementById('theme-toggle-home');
+
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+
+        if (drawerThemeToggle) {
+            drawerThemeToggle.checked = true;
+        }
+
+        if (homeThemeToggle) {
+            homeThemeToggle.checked = true;
+        }
+    }
+}
+
+        function toggleTheme(useLightMode) {
+    const drawerThemeToggle = document.getElementById('theme-toggle');
+    const homeThemeToggle = document.getElementById('theme-toggle-home');
+
+    document.body.classList.toggle('light-mode', useLightMode);
+    localStorage.setItem('toxaware-theme', useLightMode ? 'light' : 'dark');
+
+    if (drawerThemeToggle) {
+        drawerThemeToggle.checked = useLightMode;
+    }
+
+    if (homeThemeToggle) {
+        homeThemeToggle.checked = useLightMode;
+    }
+}
+
+        function escapeHTML(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+        }
+
+        function formatAIOutput(rawText) {
+            const escaped = escapeHTML(rawText);
+
+            return escaped
+                .replace(/^#{1,6}\s*(.*?)$/gm, '<strong>$1</strong>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, "<br>");
+        }
+
+        function getResultTone(rawText) {
+            const text = String(rawText || "").toLowerCase();
+
+            const highRiskWords = [
+                "high risk",
+                "high concern",
+                "dangerous",
+                "severe",
+                "emergency",
+                "urgent",
+                "call 911",
+                "poison control",
+                "seek medical attention",
+                "seek emergency care",
+                "immediate medical attention",
+                "red flag"
+            ];
+
+            const moderateRiskWords = [
+                "moderate risk",
+                "moderate concern",
+                "caution",
+                "monitor",
+                "elevated",
+                "possible concern",
+                "may be concerning"
+            ];
+
+            const lowRiskWords = [
+                "low risk",
+                "low concern",
+                "minimal risk",
+                "minimal concern",
+                "unlikely",
+                "no significant",
+                "not expected"
+            ];
+
+            if (highRiskWords.some(word => text.includes(word))) {
+                return {
+                    border: "var(--danger-border)",
+                    glow: "rgba(165, 111, 97, 0.35)",
+                    dot: "var(--danger-border)"
+                };
+            }
+
+            if (moderateRiskWords.some(word => text.includes(word))) {
+                return {
+                    border: "var(--warning-border)",
+                    glow: "rgba(184, 153, 112, 0.32)",
+                    dot: "var(--warning-border)"
+                };
+            }
+
+            if (lowRiskWords.some(word => text.includes(word))) {
+                return {
+                    border: "var(--success-border)",
+                    glow: "rgba(127, 143, 104, 0.32)",
+                    dot: "var(--success-border)"
+                };
+            }
+
+            return {
+                border: "var(--border)",
+                glow: "rgba(120, 94, 78, 0.22)",
+                dot: "var(--accent)"
+            };
+        }
+
+        function setResultOutput(rawText, resultBox, resultText, pulseDot) {
+            const tone = getResultTone(rawText);
+
+            resultText.innerHTML = formatAIOutput(rawText);
+
+            resultBox.style.borderColor = tone.border;
+            resultBox.style.borderWidth = "2px";
+            resultBox.style.boxShadow = `0 0 0 2px ${tone.glow}, var(--shadow-soft)`;
+
+            resultText.style.borderColor = tone.border;
+            resultText.style.borderWidth = "2px";
+
+            pulseDot.style.backgroundColor = tone.dot;
+        }
+
+        function resetResultStyle(resultBox, resultText, pulseDot) {
+            resultBox.style.borderColor = "var(--border-soft)";
+            resultBox.style.borderWidth = "1.5px";
+            resultBox.style.boxShadow = "var(--shadow-soft)";
+            resultText.style.borderColor = "var(--border-soft)";
+            resultText.style.borderWidth = "1.5px";
+            pulseDot.style.backgroundColor = "var(--accent)";
+        }
+
+        function switchTab(mode) {
+            const tabs = ['analyzer', 'identifier', 'scanner', 'quiz', 'lab'];
+            const resultBox = document.getElementById('result-box');
+
+            tabs.forEach(t => {
+                const button = document.getElementById(`tab-${t}`);
+                const form = document.getElementById(`form-${t}`);
+
+                if (t === mode) {
+                    button.className = "sidebar-link sidebar-active";
+                    form.classList.remove('hidden');
+                } else {
+                    button.className = "sidebar-link";
+                    form.classList.add('hidden');
+                }
+            });
+
+            if (mode === 'quiz') {
+                resultBox.classList.add('hidden');
+                resetQuiz();
+            }
+
+            if (mode === 'lab') {
+                switchLabMode('general');
+            }
+        }
+
+        function switchLabMode(mode) {
+            const generalPanel = document.getElementById('lab-general-panel');
+            const liverPanel = document.getElementById('lab-liver-panel');
+            const generalButton = document.getElementById('lab-mode-general');
+            const liverButton = document.getElementById('lab-mode-liver');
+
+            if (!generalPanel || !liverPanel || !generalButton || !liverButton) {
+                return;
+            }
+
+            if (mode === 'general') {
+                generalPanel.classList.remove('hidden');
+                liverPanel.classList.add('hidden');
+
+                generalButton.className = "lab-choice active";
+                liverButton.className = "lab-choice";
+            } else {
+                generalPanel.classList.add('hidden');
+                liverPanel.classList.remove('hidden');
+
+                liverButton.className = "lab-choice active";
+                generalButton.className = "lab-choice";
+            }
+        }
+
+        function renderQuizShell() {
+            const displayFrame = document.getElementById('quiz-playable-zone');
+
+            displayFrame.innerHTML = `
+                <div class="flex justify-end mb-3">
+                    <button onclick="endQuizEarly()" class="secondary-button text-xs">
+                        End Quiz
+                    </button>
+                </div>
+                <div id="quiz-symbol-avatar" class="text-6xl mb-4 mt-2">☠️</div>
+                <p id="quiz-progress-text" class="text-xs mb-2" style="color: var(--text-soft);">Question 1 of ${QUIZ_QUESTIONS.length}</p>
+                <h3 id="quiz-question-text" class="text-base font-black mb-6">Loading question...</h3>
+                <div id="quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div id="quiz-feedback" class="hidden"></div>
+            `;
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            answeredQuestions = 0;
+            document.getElementById('quiz-score-val').textContent = score;
+            renderQuizShell();
+            loadQuizQuestion();
+        }
+
+        function loadQuizQuestion() {
+            const displayFrame = document.getElementById('quiz-playable-zone');
+
+            if (currentQuestionIndex >= QUIZ_QUESTIONS.length) {
+                showQuizResults(false);
+                return;
+            }
+
+            const feedbackBox = document.getElementById('quiz-feedback');
+            feedbackBox.classList.add('hidden');
+            feedbackBox.innerHTML = "";
+
+            const q = QUIZ_QUESTIONS[currentQuestionIndex];
+
+            document.getElementById('quiz-symbol-avatar').textContent = q.symbol;
+            document.getElementById('quiz-progress-text').textContent = `Question ${currentQuestionIndex + 1} of ${QUIZ_QUESTIONS.length}`;
+            document.getElementById('quiz-question-text').textContent = q.question;
+
+            const optionsContainer = document.getElementById('quiz-options-container');
+            optionsContainer.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "quiz-option";
+                btn.textContent = opt;
+                btn.onclick = () => checkQuizAnswer(idx);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(selectedIdx) {
+            const q = QUIZ_QUESTIONS[currentQuestionIndex];
+            const feedbackBox = document.getElementById('quiz-feedback');
+            const optionsContainer = document.getElementById('quiz-options-container');
+
+            Array.from(optionsContainer.children).forEach((btn, idx) => {
+                btn.disabled = true;
+
+                if (idx === q.correct) {
+                    btn.className = "quiz-option correct";
+                } else if (idx === selectedIdx) {
+                    btn.className = "quiz-option wrong";
+                } else {
+                    btn.className = "quiz-option disabled";
+                }
+            });
+
+            answeredQuestions++;
+            feedbackBox.classList.remove('hidden');
+
+            if (selectedIdx === q.correct) {
+                score += 10;
+                document.getElementById('quiz-score-val').textContent = score;
+                feedbackBox.className = "quiz-feedback correct";
+                feedbackBox.innerHTML = `Correct! +10 Points.<br><span style="font-weight: 500;">${q.tip}</span>`;
+            } else {
+                feedbackBox.className = "quiz-feedback wrong";
+                feedbackBox.innerHTML = `Not quite.<br><span style="font-weight: 500;">${q.tip}</span>`;
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = "next-quiz-button";
+            nextBtn.textContent = currentQuestionIndex === QUIZ_QUESTIONS.length - 1 ? "Finish Quiz" : "Next Question";
+            nextBtn.onclick = () => {
+                currentQuestionIndex++;
+                loadQuizQuestion();
+            };
+            feedbackBox.appendChild(nextBtn);
+        }
+
+        function endQuizEarly() {
+            showQuizResults(true);
+        }
+
+        function showQuizResults(endedEarly) {
+            const displayFrame = document.getElementById('quiz-playable-zone');
+
+            const correctAnswers = score / 10;
+            const possiblePoints = answeredQuestions * 10;
+
+            if (answeredQuestions === 0) {
+                displayFrame.innerHTML = `
+                    <div class="text-5xl mb-3">🛑</div>
+                    <h3 class="text-lg font-black mb-1" style="color: var(--accent);">Quiz Ended</h3>
+                    <p class="text-xs mb-4" style="color: var(--text-muted);">You did not answer any questions yet.</p>
+                    <button onclick="resetQuiz()" class="primary-button" style="width: auto; padding-left: 1.25rem; padding-right: 1.25rem;">Start Quiz</button>
+                `;
+                return;
+            }
+
+            const percentage = Math.round((correctAnswers / answeredQuestions) * 100);
+
+            displayFrame.innerHTML = `
+                <div class="text-5xl mb-3">${endedEarly ? "📘" : "🏆"}</div>
+                <h3 class="text-lg font-black mb-1" style="color: var(--accent);">${endedEarly ? "Quiz Ended Early" : "Quiz Completed!"}</h3>
+                <p class="text-sm mb-2" style="color: var(--text-main);">
+                    Score: <strong>${correctAnswers}/${answeredQuestions}</strong> correct
+                </p>
+                <p class="text-xs mb-2" style="color: var(--text-muted);">
+                    Points: <strong>${score}/${possiblePoints}</strong>
+                </p>
+                <p class="text-xs mb-4" style="color: var(--text-muted);">
+                    Accuracy: <strong>${percentage}%</strong>
+                </p>
+                <button onclick="resetQuiz()" class="primary-button" style="width: auto; padding-left: 1.25rem; padding-right: 1.25rem;">Retry Quiz</button>
+            `;
+        }
+
+        async function detectEmergencyContact() {
+            const emergencyText = document.getElementById('emergency-contact-text');
+            emergencyText.innerHTML = "<span style='color: var(--accent);'>Locating regional hotline database...</span>";
+
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                let contactInfo = "📞 Baseline: 112 / 911";
+
+                if (data.country_code === 'US' || data.country_code === 'CA') {
+                    contactInfo = "🇺🇸/🇨🇦 Poison Control: 1-800-222-1222";
+                } else if (data.country_code === 'GB') {
+                    contactInfo = "🇬🇧 Emergency Line: 111";
+                }
+
+                emergencyText.innerHTML = `<strong>Region:</strong> ${data.country_name} <br> <span style='color: var(--accent); font-weight: 900; margin-top: 0.25rem; display: block;'>${contactInfo}</span>`;
+            } catch (err) {
+                emergencyText.innerHTML = "<span style='color: var(--danger-text);'>Unable to automatically retrieve location.</span>";
+            }
+        }
+
+        async function submitForm(event, targetUrl) {
+            event.preventDefault();
+
+            const resultBox = document.getElementById('result-box');
+            const resultText = document.getElementById('result-text');
+            const pulseDot = document.getElementById('pulse-dot');
+            const headerText = document.getElementById('result-header-text');
+
+            resultBox.classList.remove('hidden');
+            resetResultStyle(resultBox, resultText, pulseDot);
+            pulseDot.className = "animate-pulse";
+            headerText.textContent = "AI Analysis Output:";
+            resultText.innerHTML = "<p style='color: var(--text-muted);'>Analyzing records... Please wait.</p>";
+
+            const formData = new FormData(event.target);
+            const dataObject = Object.fromEntries(formData.entries());
+
+            if (!navigator.onLine) {
+                handleOfflineFallback(dataObject, resultText, pulseDot, headerText);
+                return;
+            }
+
+            try {
+                const response = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Type-Content': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataObject)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    setResultOutput(result.data, resultBox, resultText, pulseDot);
+                } else {
+                    resultText.innerHTML = `<span style="color: var(--danger-text);">Error: ${escapeHTML(result.error)}</span>`;
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                }
+            } catch (err) {
+                handleOfflineFallback(dataObject, resultText, pulseDot, headerText);
+            }
+        }
+
+        async function submitPhotoForm(event, targetUrl) {
+            event.preventDefault();
+
+            const resultBox = document.getElementById('result-box');
+            const resultText = document.getElementById('result-text');
+            const pulseDot = document.getElementById('pulse-dot');
+            const headerText = document.getElementById('result-header-text');
+
+            resultBox.classList.remove('hidden');
+            resetResultStyle(resultBox, resultText, pulseDot);
+            pulseDot.className = "animate-pulse";
+            headerText.textContent = "Scanner Output:";
+            resultText.innerHTML = "<p style='color: var(--accent);'>Uploading image and processing Groq Vision parameter configurations... Please wait.</p>";
+
+            if (!navigator.onLine) {
+                pulseDot.className = "";
+                pulseDot.style.backgroundColor = "var(--warning-border)";
+                headerText.textContent = "Scanner Error:";
+                resultText.innerHTML = "❌ Vision Scanning is Unavailable Offline.";
+                return;
+            }
+
+            const nativeFormData = new FormData(event.target);
+
+            try {
+                const response = await fetch(targetUrl, {
+                    method: 'POST',
+                    body: nativeFormData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    setResultOutput(result.data, resultBox, resultText, pulseDot);
+                } else {
+                    resultText.innerHTML = `<span style="color: var(--danger-text);">Error: ${escapeHTML(result.error)}</span>`;
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                }
+            } catch (err) {
+                resultText.innerHTML = `<span style="color: var(--danger-text); font-weight: 800;">Network connection error: ${escapeHTML(err.message)}</span>`;
+                pulseDot.style.backgroundColor = "var(--danger-border)";
+            }
+        }
+
+        async function submitLabForm(event, targetUrl) {
+            event.preventDefault();
+
+            const resultBox = document.getElementById('result-box');
+            const resultText = document.getElementById('result-text');
+            const pulseDot = document.getElementById('pulse-dot');
+            const headerText = document.getElementById('result-header-text');
+
+            resultBox.classList.remove('hidden');
+            resetResultStyle(resultBox, resultText, pulseDot);
+            pulseDot.className = "animate-pulse";
+            headerText.textContent = "Lab Report Analysis Output:";
+            resultText.innerHTML = "<p style='color: var(--accent);'>Uploading lab information and processing report... Please wait.</p>";
+
+            if (!navigator.onLine) {
+                const nativeFormData = new FormData(event.target);
+                const dataObject = Object.fromEntries(nativeFormData.entries());
+                handleOfflineFallback(dataObject, resultText, pulseDot, headerText);
+                return;
+            }
+
+            const nativeFormData = new FormData(event.target);
+
+            try {
+                const response = await fetch(targetUrl, {
+                    method: 'POST',
+                    body: nativeFormData
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!contentType.includes('application/json')) {
+                    const rawText = await response.text();
+                    resultText.innerHTML = `<span style="color: var(--danger-text); font-weight: 900;">Server Response Error:</span><br><br>The server returned HTML instead of JSON.<br><br>Status: ${response.status} ${response.statusText}<br><br>First part of server response:<br><br><pre class="whitespace-pre-wrap text-xs p-3 rounded-lg border">${rawText.slice(0, 700).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                    pulseDot.className = "";
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                    headerText.textContent = "Lab Upload Error:";
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    setResultOutput(result.data, resultBox, resultText, pulseDot);
+                } else {
+                    resultText.innerHTML = `<span style="color: var(--danger-text);">Error: ${escapeHTML(result.error)}</span>`;
+                    pulseDot.className = "";
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                }
+            } catch (err) {
+                resultText.innerHTML = `<span style="color: var(--danger-text); font-weight: 800;">Network connection error: ${escapeHTML(err.message)}</span>`;
+                pulseDot.className = "";
+                pulseDot.style.backgroundColor = "var(--danger-border)";
+                headerText.textContent = "Lab Upload Error:";
+            }
+        }
+
+        async function submitLiverImpactForm(event, targetUrl) {
+            event.preventDefault();
+
+            const resultBox = document.getElementById('result-box');
+            const resultText = document.getElementById('result-text');
+            const pulseDot = document.getElementById('pulse-dot');
+            const headerText = document.getElementById('result-header-text');
+
+            resultBox.classList.remove('hidden');
+            resetResultStyle(resultBox, resultText, pulseDot);
+            pulseDot.className = "animate-pulse";
+            headerText.textContent = "Liver Impact Analysis Output:";
+            resultText.innerHTML = "<p style='color: var(--accent);'>Checking DILIrank dataset and analyzing liver-impact risk... Please wait.</p>";
+
+            if (!navigator.onLine) {
+                const nativeFormData = new FormData(event.target);
+                const dataObject = Object.fromEntries(nativeFormData.entries());
+                handleOfflineFallback(dataObject, resultText, pulseDot, headerText);
+                return;
+            }
+
+            const nativeFormData = new FormData(event.target);
+
+            try {
+                const response = await fetch(targetUrl, {
+                    method: 'POST',
+                    body: nativeFormData
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!contentType.includes('application/json')) {
+                    const rawText = await response.text();
+                    resultText.innerHTML = `<span style="color: var(--danger-text); font-weight: 900;">Server Response Error:</span><br><br>The server returned HTML instead of JSON.<br><br>Status: ${response.status} ${response.statusText}<br><br>First part of server response:<br><br><pre class="whitespace-pre-wrap text-xs p-3 rounded-lg border">${rawText.slice(0, 700).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                    pulseDot.className = "";
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                    headerText.textContent = "Liver Impact Error:";
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    setResultOutput(result.data, resultBox, resultText, pulseDot);
+                } else {
+                    resultText.innerHTML = `<span style="color: var(--danger-text);">Error: ${escapeHTML(result.error)}</span>`;
+                    pulseDot.className = "";
+                    pulseDot.style.backgroundColor = "var(--danger-border)";
+                }
+            } catch (err) {
+                resultText.innerHTML = `<span style="color: var(--danger-text); font-weight: 800;">Network connection error: ${escapeHTML(err.message)}</span>`;
+                pulseDot.className = "";
+                pulseDot.style.backgroundColor = "var(--danger-border)";
+                headerText.textContent = "Liver Impact Error:";
+            }
+        }
+
+        function handleOfflineFallback(dataObject, resultText, pulseDot, headerText) {
+            pulseDot.className = "";
+            pulseDot.style.backgroundColor = "var(--warning-border)";
+            headerText.textContent = "Local Backup Database Result:";
+
+            if (dataObject.mode === "lab") {
+                resultText.innerHTML = "❌ <strong>Offline Verification Blocked.</strong><br><br>Biometric blood panel pattern cross-matching requires active cloud server routing to map organ stress variations accurately.";
+                return;
+            }
+
+            if (dataObject.mode === "liverimpact") {
+                resultText.innerHTML = "❌ <strong>Offline Liver Analysis Blocked.</strong><br><br>The liver-impact analyzer needs the cloud backend to check the DILIrank dataset and interpret uploaded liver files.";
+                return;
+            }
+
+            if (dataObject.mode === "identifier") {
+                resultText.innerHTML = "❌ Symptom Identification is Unavailable Offline.";
+                return;
+            }
+
+            const searchInput = (dataObject.substance || "").toLowerCase().trim();
+            let matchedRecord = OFFLINE_FIRST_AID_DATABASE[searchInput];
+
+            if (matchedRecord) {
+                resultText.innerHTML = formatAIOutput(matchedRecord);
+            } else {
+                resultText.innerHTML = "⚠️ Substance Not Found Offline. Please seek prompt emergency attention.";
+            }
+        }
+    
+        function showSignupForm() {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.remove('hidden');
+    document.getElementById('auth-message').textContent = "";
+}
+
+function showLoginForm() {
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('auth-message').textContent = "";
+}
+
+function setAuthMessage(message, isError = false) {
+    const authMessage = document.getElementById('auth-message');
+    authMessage.textContent = message;
+    authMessage.style.color = isError ? "var(--danger-text)" : "var(--accent)";
+}
+
+async function submitLogin(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    setAuthMessage("Logging in...");
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            setAuthMessage(result.error || "Login failed.", true);
+            return;
+        }
+
+        setAuthMessage("Logged in successfully.");
+        refreshAuthUI();
+
+    } catch (error) {
+        setAuthMessage("Network error while logging in.", true);
+    }
+}
+
+async function submitSignup(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+
+    setAuthMessage("Creating account...");
+
+    try {
+        const response = await fetch('/api/signup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            setAuthMessage(result.error || "Signup failed.", true);
+            return;
+        }
+
+        setAuthMessage("Account created successfully.");
+        refreshAuthUI();
+
+    } catch (error) {
+        setAuthMessage("Network error while creating account.", true);
+    }
+}
+
+async function refreshAuthUI() {
+    const authFormsCard = document.getElementById('auth-forms-card');
+    const loggedInCard = document.getElementById('logged-in-card');
+    const loggedInEmail = document.getElementById('logged-in-email');
+
+    try {
+        const response = await fetch('/api/me');
+        const result = await response.json();
+
+        if (result.logged_in) {
+            authFormsCard.classList.add('hidden');
+            loggedInCard.classList.remove('hidden');
+            loggedInEmail.textContent = result.user.email;
+        } else {
+            loggedInCard.classList.add('hidden');
+            authFormsCard.classList.remove('hidden');
+            showLoginForm();
+        }
+
+    } catch (error) {
+        loggedInCard.classList.add('hidden');
+        authFormsCard.classList.remove('hidden');
+        setAuthMessage("Could not check login status.", true);
+    }
+}
+
+async function logoutUser() {
+    try {
+        await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        refreshAuthUI();
+
+    } catch (error) {
+        setAuthMessage("Could not log out.", true);
+    }
+}
+
+async function startGoogleLogin() {
+    setAuthMessage("Opening Google login...");
+
+    try {
+        const response = await fetch('/api/google-login');
+        const result = await response.json();
+
+        if (!result.success || !result.url) {
+            setAuthMessage(result.error || "Google login failed.", true);
+            return;
+        }
+
+        const popup = window.open(
+            result.url,
+            "googleLogin",
+            "width=520,height=650"
+        );
+
+        if (!popup) {
+            setAuthMessage("Popup blocked. Please allow popups for this site.", true);
+        }
+
+    } catch (error) {
+        setAuthMessage("Could not start Google login.", true);
+    }
+}
+
+window.addEventListener("message", function(event) {
+    if (event.origin !== window.location.origin) {
+        return;
+    }
+
+    if (event.data && event.data.type === "google-login-complete") {
+        if (event.data.success) {
+            setAuthMessage("Logged in with Google.");
+            refreshAuthUI();
+        } else {
+            setAuthMessage(event.data.error || "Google login failed.", true);
+        }
+    }
+});
+    </script>
+</body>
+</html>
