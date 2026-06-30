@@ -13,6 +13,13 @@ venv/
 ENV/
 env/
 
+# Node / JavaScript: Ignore node_modules if present
+node_modules/
+
+# Build artifacts
+build/
+dist/
+
 # Operating System: Clutter files
 .DS_Store
 Thumbs.db

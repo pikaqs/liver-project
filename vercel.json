@@ -1,4 +1,10 @@
 {
+  "version": 3,
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.10"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

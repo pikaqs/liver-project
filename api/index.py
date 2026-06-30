@@ -17,11 +17,17 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-supabase: Client = create_client(
-    SUPABASE_URL,
-    SUPABASE_KEY
+supabase_admin: Client | None = None
+supabase: Client | None = None
+
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    supabase_admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(
+        SUPABASE_URL,
+        SUPABASE_KEY
 )
 
 # Robust absolute path calculation for Vercel Serverless environment and local VS Code testing
@@ -883,6 +889,9 @@ def analyze_liver_impact():
 
 @app.route("/api/signup", methods=["POST"])
 def signup():
+    if not supabase_admin:
+        return jsonify({"success": False, "error": "Supabase admin client is not configured."}), 500
+
     payload = request.get_json(silent=True) or {}
 
     email = normalize_email(payload.get("email"))
@@ -918,6 +927,9 @@ def signup():
 
 @app.route("/api/login", methods=["POST"])
 def login():
+    if not supabase:
+        return jsonify({"success": False, "error": "Supabase client is not configured."}), 500
+
     payload = request.get_json(silent=True) or {}
 
     email = normalize_email(payload.get("email"))
@@ -956,8 +968,13 @@ def login():
 
 @app.route("/api/google-login", methods=["GET"])
 def google_login():
+    if not supabase:
+        return jsonify({"success": False, "error": "Supabase client is not configured."}), 500
+
     try:
-        site_url = os.getenv("SITE_URL", "http://127.0.0.1:5000")
+        site_url = os.getenv("SITE_URL") or (
+            f"https://{os.getenv('VERCEL_URL')}" if os.getenv('VERCEL_URL') else "http://127.0.0.1:5000"
+        )
 
         response = supabase.auth.sign_in_with_oauth({
             "provider": "google",
