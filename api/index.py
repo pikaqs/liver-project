@@ -35,15 +35,13 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 template_candidates = [
     os.path.abspath(os.path.join(base_dir, '..', 'templates')),
     os.path.abspath(os.path.join(base_dir, 'templates')),
-    os.path.abspath(os.path.join(base_dir, '..')),  # Looks directly in the project root folder
     base_dir
 ]
 template_dir = next(
-    (path for path in template_candidates if os.path.isdir(path)),
-    base_dir
+    (path for path in template_candidates if os.path.exists(os.path.join(path, 'index.html'))),
+    template_candidates[0]
 )
 
-# Initialize your Flask app with the resolved template directory
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-this-later")
 
