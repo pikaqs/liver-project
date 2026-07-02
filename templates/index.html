@@ -914,7 +914,7 @@ body.light-mode .sidebar-active {
 
         @media (max-width: 980px) {
             body.drawer-open .page-shell {
-                transform: translateX(0);
+                transform: translateX(8.5rem);
             }
         }
 
@@ -2554,7 +2554,7 @@ function enterSection(sectionName) {
             }
 
             if (mode === 'lab') {
-                switchLabMode('general');
+                switchTab('general');
             }
         }
 
@@ -3111,6 +3111,40 @@ async function startGoogleLogin() {
         setAuthMessage("Could not start Google login.", true);
     }
 }
+
+// FAIL-SAFE INITIALIZATION INTERCEPTOR:
+// Processes authentication query configurations contextually if they drop back onto the home route layout view.
+window.addEventListener("DOMContentLoaded", async function() {
+    const queryParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    const code = queryParams.get("code");
+    const accessToken = hashParams.get("access_token");
+    
+    if (code || accessToken) {
+        setAuthMessage("Finishing secure synchronization check...");
+        try {
+            const response = await fetch("/api/google-complete", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    access_token: accessToken,
+                    code: code
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                setAuthMessage("Logged in with Google.");
+                window.history.replaceState({}, document.title, window.location.pathname);
+                refreshAuthUI();
+            } else {
+                setAuthMessage(result.error || "Google sync loop configuration mismatch.", true);
+            }
+        } catch (e) {
+            setAuthMessage("Redirection validation handshake timed out.", true);
+        }
+    }
+});
 
 window.addEventListener("message", function(event) {
     if (event.origin !== window.location.origin) {
