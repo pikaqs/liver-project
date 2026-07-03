@@ -3088,26 +3088,39 @@ async function logoutUser() {
 async function startGoogleLogin() {
     setAuthMessage("Opening Google login...");
 
+    // Open the popup immediately while the click is still active.
+    // Safari/iPhone often blocks or misroutes popups opened after an awaited fetch.
+    const popup = window.open(
+        "about:blank",
+        "googleLogin",
+        "width=520,height=650"
+    );
+
+    if (!popup) {
+        setAuthMessage("Popup blocked. Please allow popups for this site.", true);
+        return;
+    }
+
+    popup.document.write("<p style='font-family: sans-serif;'>Opening Google login...</p>");
+
     try {
-        const response = await fetch('/api/google-login');
+        const response = await fetch('/api/google-login', {
+            method: 'GET',
+            cache: 'no-store'
+        });
+
         const result = await response.json();
 
         if (!result.success || !result.url) {
+            popup.close();
             setAuthMessage(result.error || "Google login failed.", true);
             return;
         }
 
-        const popup = window.open(
-            result.url,
-            "googleLogin",
-            "width=520,height=650"
-        );
-
-        if (!popup) {
-            setAuthMessage("Popup blocked. Please allow popups for this site.", true);
-        }
+        popup.location.href = result.url;
 
     } catch (error) {
+        popup.close();
         setAuthMessage("Could not start Google login.", true);
     }
 }
