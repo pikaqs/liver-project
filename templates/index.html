@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>toxeye</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -3115,68 +3116,104 @@ window.addEventListener('message', async function handleGoogleLoginMessage(event
 async function startGoogleLogin() {
     setAuthMessage("Opening Google sign-in...");
 
-    googleLoginFinished = false;
+    const supabaseUrl = "https://nxnxcrlqqddvmnklmump.supabase.co";
+    const supabaseAnonKey = "sb_publishable_5OtBi1pOCDENkUbINECefw_vTM3QMhU";
 
-    const popupWidth = 520;
-    const popupHeight = 680;
-    const popupLeft = Math.max(0, window.screenX + (window.outerWidth - popupWidth) / 2);
-    const popupTop = Math.max(0, window.screenY + (window.outerHeight - popupHeight) / 2);
+    try {
+        const authClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                flowType: "implicit",
+                detectSessionInUrl: true,
+                persistSession: true
+            }
+        });
 
-    googleLoginPopup = window.open(
-        'about:blank',
-        'toxeye-google-login',
-        `width=${popupWidth},height=${popupHeight},left=${popupLeft},top=${popupTop},resizable=yes,scrollbars=yes`
-    );
+        const redirectTo = window.location.origin + window.location.pathname;
 
-    if (!googleLoginPopup) {
-        setAuthMessage("Popup blocked. Allow popups for this site, then try Google sign-in again.", true);
+        const { error } = await authClient.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: redirectTo,
+                queryParams: {
+                    prompt: "select_account"
+                }
+            }
+        });
+
+        if (error) {
+            setAuthMessage(error.message || "Could not start Google sign-in.", true);
+        }
+    } catch (error) {
+        setAuthMessage(error.message || "Could not start Google sign-in.", true);
+    }
+}
+
+async function finishSupabaseBrowserLoginIfNeeded() {
+    const supabaseUrl = "https://nxnxcrlqqddvmnklmump.supabase.co";
+    const supabaseAnonKey = "sb_publishable_5OtBi1pOCDENkUbINECefw_vTM3QMhU";
+
+    if (!window.supabase) {
         return;
     }
 
-    try {
-        googleLoginPopup.document.write(`
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><title>Opening Google sign-in</title></head>
-            <body style="font-family: system-ui; background: #211a16; color: #f2ece5; display: grid; min-height: 100vh; place-items: center; margin: 0;">
-                <p>Opening Google sign-in...</p>
-            </body>
-            </html>
-        `);
-        googleLoginPopup.document.close();
-    } catch (error) {
-        // Some browsers block writing to the popup. The login can still continue.
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const hasAuthReturn = window.location.hash.includes("access_token") || queryParams.has("code") || queryParams.has("error") || hashParams.has("error");
+
+    if (!hasAuthReturn) {
+        return;
     }
 
-    const popupClosedWatcher = window.setInterval(function checkGooglePopupClosed() {
-        if (!googleLoginPopup || googleLoginPopup.closed) {
-            window.clearInterval(popupClosedWatcher);
+    const returnedError = queryParams.get("error_description") || queryParams.get("error") || hashParams.get("error_description") || hashParams.get("error");
+    if (returnedError) {
+        setAuthMessage(returnedError, true);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
 
-            if (!googleLoginFinished) {
-                setAuthMessage("Google sign-in popup was closed before login finished.", true);
-            }
-        }
-    }, 700);
+    setAuthMessage("Finishing Google sign-in...");
 
     try {
-        const response = await fetch('/api/auth/google/start', {cache: 'no-store'});
-        const result = await response.json();
+        const authClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                flowType: "implicit",
+                detectSessionInUrl: true,
+                persistSession: true
+            }
+        });
 
-        if (!result.success || !result.url) {
-            googleLoginFinished = true;
-            googleLoginPopup.close();
-            setAuthMessage(result.error || "Could not start Google sign-in.", true);
+        const { data, error } = await authClient.auth.getSession();
+
+        if (error || !data.session || !data.session.access_token) {
+            setAuthMessage((error && error.message) || "Google returned to the app, but no Supabase access token was found.", true);
             return;
         }
 
-        googleLoginPopup.location.href = result.url;
+        const response = await fetch("/api/auth/google/complete", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token || ""
+            })
+        });
 
+        const result = await response.json();
+
+        if (!result.success) {
+            setAuthMessage(result.error || "Google sign-in could not be completed on the server.", true);
+            return;
+        }
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+        await refreshAuthUI();
+        setAuthMessage("Logged in with Google successfully.");
     } catch (error) {
-        googleLoginFinished = true;
-        googleLoginPopup.close();
-        setAuthMessage("Network error while starting Google sign-in.", true);
+        setAuthMessage(error.message || "Could not finish Google sign-in.", true);
     }
 }
+
+window.addEventListener("DOMContentLoaded", finishSupabaseBrowserLoginIfNeeded);
     </script>
 </body>
 </html>
