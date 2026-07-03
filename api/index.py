@@ -5,6 +5,7 @@ import csv
 import base64
 import difflib
 import re
+from urllib.parse import urlencode
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify, session
 from groq import Groq
@@ -966,26 +967,43 @@ def login():
          }), 401
 
 
+def get_current_site_url():
+    """Return the site URL that matches the current browser request.
+
+    This avoids stale SITE_URL values causing Google OAuth popups to redirect
+    back to the wrong page/domain.
+    """
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip()
+    forwarded_host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip()
+
+    if forwarded_host:
+        scheme = forwarded_proto or request.scheme or "https"
+        return f"{scheme}://{forwarded_host}".rstrip("/")
+
+    return request.host_url.rstrip("/")
+
+
 @app.route("/api/google-login", methods=["GET"])
 def google_login():
-    if not supabase:
-        return jsonify({"success": False, "error": "Supabase client is not configured."}), 500
+    if not SUPABASE_URL:
+        return jsonify({"success": False, "error": "Supabase URL is not configured."}), 500
 
     try:
-        site_url = os.getenv("SITE_URL") or (
-            f"https://{os.getenv('VERCEL_URL')}" if os.getenv('VERCEL_URL') else "http://127.0.0.1:5000"
-        )
+        site_url = get_current_site_url()
+        redirect_to = f"{site_url}/auth/callback"
 
-        response = supabase.auth.sign_in_with_oauth({
+        # Build the OAuth URL directly so the popup always starts at Supabase's
+        # Google authorization endpoint instead of accidentally reopening this app.
+        query = urlencode({
             "provider": "google",
-            "options": {
-                "redirect_to": f"{site_url}/auth/callback"
-            }
+            "redirect_to": redirect_to
         })
+        oauth_url = f"{SUPABASE_URL.rstrip('/')}/auth/v1/authorize?{query}"
 
         return jsonify({
             "success": True,
-            "url": response.url
+            "url": oauth_url,
+            "redirect_to": redirect_to
         })
 
     except Exception as e:
