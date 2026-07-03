@@ -5,11 +5,11 @@ import csv
 import base64
 import difflib
 import re
-from urllib.parse import urlencode
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect
 from groq import Groq
 from dotenv import load_dotenv
+from urllib.parse import quote
 
 
 # Load secret environment API tokens locally
@@ -967,50 +967,35 @@ def login():
          }), 401
 
 
-def get_current_site_url():
-    """Return the site URL that matches the current browser request.
 
-    This avoids stale SITE_URL values causing Google OAuth popups to redirect
-    back to the wrong page/domain.
-    """
+def get_public_base_url():
+    """Build the correct public URL for local VS Code or Vercel."""
     forwarded_proto = request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip()
     forwarded_host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip()
 
     if forwarded_host:
-        scheme = forwarded_proto or request.scheme or "https"
+        scheme = forwarded_proto or "https"
         return f"{scheme}://{forwarded_host}".rstrip("/")
 
-    return request.host_url.rstrip("/")
+    return request.url_root.rstrip("/")
 
 
 @app.route("/api/google-login", methods=["GET"])
 def google_login():
     if not SUPABASE_URL:
-        return jsonify({"success": False, "error": "Supabase URL is not configured."}), 500
+        return jsonify({"success": False, "error": "SUPABASE_URL is not configured."}), 500
 
-    try:
-        site_url = get_current_site_url()
-        redirect_to = f"{site_url}/auth/callback"
+    base_url = get_public_base_url()
+    redirect_to = f"{base_url}/auth/callback"
 
-        # Build the OAuth URL directly so the popup always starts at Supabase's
-        # Google authorization endpoint instead of accidentally reopening this app.
-        query = urlencode({
-            "provider": "google",
-            "redirect_to": redirect_to
-        })
-        oauth_url = f"{SUPABASE_URL.rstrip('/')}/auth/v1/authorize?{query}"
+    auth_url = (
+        f"{SUPABASE_URL.rstrip('/')}/auth/v1/authorize"
+        f"?provider=google"
+        f"&redirect_to={quote(redirect_to, safe='')}"
+        f"&scopes={quote('email profile', safe='')}"
+    )
 
-        return jsonify({
-            "success": True,
-            "url": oauth_url,
-            "redirect_to": redirect_to
-        })
-
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+    return redirect(auth_url)
 
 
 @app.route("/api/google-complete", methods=["POST"])
@@ -1058,57 +1043,65 @@ def google_complete():
 
 @app.route("/auth/callback", methods=["GET"])
 def auth_callback():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Google Login</title>
-    </head>
-    <body>
-        <p>Completing Google login...</p>
+    code = request.args.get("code")
+    error = request.args.get("error_description") or request.args.get("error")
 
-        <script>
-            async function completeLogin() {
-                const hash = new URLSearchParams(window.location.hash.substring(1));
-                const query = new URLSearchParams(window.location.search);
+    if error:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; padding: 2rem;">
+            <h3>Google login failed</h3>
+            <p>{error}</p>
+            <p><a href="/">Back to app</a></p>
+        </body>
+        </html>
+        """, 400
 
-                const accessToken = hash.get("access_token");
-                const code = query.get("code");
+    if not code:
+        return """
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; padding: 2rem;">
+            <h3>Google login failed</h3>
+            <p>Supabase did not return a login code. Check that the Google provider is enabled and the redirect URL is allowed.</p>
+            <p><a href="/">Back to app</a></p>
+        </body>
+        </html>
+        """, 400
 
-                if (!accessToken && !code) {
-                    document.body.innerHTML = "<p>Google login failed: missing access token or code.</p>";
-                    return;
-                }
+    try:
+        auth_response = supabase.auth.exchange_code_for_session({
+            "auth_code": code
+        })
 
-                const response = await fetch("/api/google-complete", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        access_token: accessToken,
-                        code: code
-                    })
-                });
+        if not auth_response.user or not auth_response.user.email:
+            return """
+            <!DOCTYPE html>
+            <html>
+            <body style="font-family: sans-serif; padding: 2rem;">
+                <h3>Google login failed</h3>
+                <p>Could not verify the Google user.</p>
+                <p><a href="/">Back to app</a></p>
+            </body>
+            </html>
+            """, 401
 
-                const result = await response.json();
+        session["user_email"] = auth_response.user.email
+        return redirect("/")
 
-                if (window.opener) {
-                    window.opener.postMessage({
-                        type: "google-login-complete",
-                        success: result.success,
-                        error: result.error || ""
-                    }, window.location.origin);
+    except Exception as e:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; padding: 2rem;">
+            <h3>Google login failed</h3>
+            <p>{str(e)}</p>
+            <p><a href="/">Back to app</a></p>
+        </body>
+        </html>
+        """, 500
 
-                    window.close();
-                } else {
-                    window.location.href = "/";
-                }
-            }
-
-            completeLogin();
-        </script>
-    </body>
-    </html>
-    """
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
