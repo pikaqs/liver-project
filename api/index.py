@@ -6,10 +6,10 @@ import base64
 import difflib
 import re
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, session, redirect
+from urllib.parse import urlencode
+from flask import Flask, render_template, request, jsonify, session
 from groq import Groq
 from dotenv import load_dotenv
-from urllib.parse import quote
 
 
 # Load secret environment API tokens locally
@@ -51,6 +51,61 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-this-later")
 
 def normalize_email(email):
     return (email or "").strip().lower()
+
+
+# Supabase Auth helpers. This is the older working REST-based flow.
+SUPABASE_REQUEST_TIMEOUT = 12.0
+
+def supabase_is_configured():
+    return bool(SUPABASE_URL and SUPABASE_KEY)
+
+def supabase_headers(access_token=None):
+    token = access_token or SUPABASE_KEY
+    return {
+        "apikey": SUPABASE_KEY or "",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+def supabase_auth_endpoint(path):
+    return f"{str(SUPABASE_URL).rstrip('/')}/auth/v1/{path.lstrip('/')}"
+
+def supabase_error_message(response, fallback="Supabase authentication request failed."):
+    try:
+        data = response.json()
+    except Exception:
+        return fallback
+    return (
+        data.get("msg")
+        or data.get("message")
+        or data.get("error_description")
+        or data.get("error")
+        or fallback
+    )
+
+def configured_site_origin():
+    configured_url = (
+        os.environ.get("SITE_URL")
+        or os.environ.get("PUBLIC_SITE_URL")
+        or os.environ.get("VERCEL_PROJECT_PRODUCTION_URL")
+        or os.environ.get("VERCEL_URL")
+        or ""
+    ).strip()
+    if configured_url:
+        if not configured_url.startswith(("http://", "https://")):
+            configured_url = f"https://{configured_url}"
+        return configured_url.rstrip("/")
+    return request.host_url.rstrip("/")
+
+def store_authenticated_user(user, provider="email"):
+    user = user or {}
+    email = normalize_email(user.get("email"))
+    user_id = user.get("id") or user.get("sub") or email
+    session.clear()
+    session["user_id"] = user_id
+    session["user_email"] = email
+    session["auth_provider"] = provider
+    return {"id": user_id, "email": email, "provider": provider}
 
 
 
@@ -890,217 +945,195 @@ def analyze_liver_impact():
 
 @app.route("/api/signup", methods=["POST"])
 def signup():
-    if not supabase_admin:
-        return jsonify({"success": False, "error": "Supabase admin client is not configured."}), 500
-
     payload = request.get_json(silent=True) or {}
-
     email = normalize_email(payload.get("email"))
     password = payload.get("password") or ""
 
+    if not supabase_is_configured():
+        return jsonify({"success": False, "error": "Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file."}), 500
     if not email or "@" not in email:
         return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
-
     if len(password) < 8:
         return jsonify({"success": False, "error": "Password must be at least 8 characters long."}), 400
 
     try:
-        admin_response = supabase_admin.auth.admin.create_user({
-            "email": email,
-            "password": password,
-            "email_confirm": True
-        })
+        response = httpx.post(
+            supabase_auth_endpoint("signup"),
+            headers=supabase_headers(),
+            json={"email": email, "password": password},
+            timeout=SUPABASE_REQUEST_TIMEOUT
+        )
+    except httpx.RequestError as e:
+        return jsonify({"success": False, "error": f"Could not reach Supabase Auth: {str(e)}"}), 502
 
-        session["user_email"] = email
+    if response.status_code >= 400:
+        return jsonify({"success": False, "error": supabase_error_message(response, "Could not create this Supabase account.")}), response.status_code
 
-        return jsonify({
-            "success": True,
-            "message": "Account created successfully.",
-            "user": {"email": email}
-        })
+    data = response.json()
+    user = data.get("user") or {}
+    session_data = data.get("session") or {}
 
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+    if session_data and session_data.get("access_token"):
+        stored_user = store_authenticated_user(user, provider="email")
+        return jsonify({"success": True, "logged_in": True, "message": "Account created and logged in successfully.", "user": {"email": stored_user.get("email")}})
+
+    return jsonify({"success": True, "logged_in": False, "message": "Account created in Supabase. Check your email to confirm the account, then log in.", "user": {"email": user.get("email") or email}})
 
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    if not supabase:
-        return jsonify({"success": False, "error": "Supabase client is not configured."}), 500
-
     payload = request.get_json(silent=True) or {}
-
     email = normalize_email(payload.get("email"))
     password = payload.get("password") or ""
 
+    if not supabase_is_configured():
+        return jsonify({"success": False, "error": "Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file."}), 500
     if not email or not password:
         return jsonify({"success": False, "error": "Email and password are required."}), 400
 
     try:
-        auth_response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
+        response = httpx.post(
+            supabase_auth_endpoint("token?grant_type=password"),
+            headers=supabase_headers(),
+            json={"email": email, "password": password},
+            timeout=SUPABASE_REQUEST_TIMEOUT
+        )
+    except httpx.RequestError as e:
+        return jsonify({"success": False, "error": f"Could not reach Supabase Auth: {str(e)}"}), 502
 
-        user_email = email
-        if auth_response.user and auth_response.user.email:
-            user_email = auth_response.user.email
+    if response.status_code >= 400:
+        return jsonify({"success": False, "error": "Invalid email or password."}), 401
 
-        session["user_email"] = user_email
+    data = response.json()
+    user = data.get("user") or {}
+    if not user:
+        return jsonify({"success": False, "error": "Supabase did not return a user for this login."}), 502
 
-        return jsonify({
-            "success": True,
-            "message": "Logged in successfully.",
-            "user": {"email": user_email}
-        })
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-
-        return jsonify({
-            "success": False,
-            "error": str(e)
-         }), 401
+    stored_user = store_authenticated_user(user, provider="email")
+    return jsonify({"success": True, "message": "Logged in successfully.", "user": {"email": stored_user.get("email")}})
 
 
+@app.route("/api/auth/google/start", methods=["GET"])
+def google_login_start():
+    if not supabase_is_configured():
+        return jsonify({"success": False, "error": "Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file."}), 500
 
-def get_public_base_url():
-    """Build the correct public URL for local VS Code or Vercel."""
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip()
-    forwarded_host = request.headers.get("X-Forwarded-Host", "").split(",")[0].strip()
+    redirect_to = f"{configured_site_origin()}/api/auth/google/callback"
+    query = urlencode({
+        "provider": "google",
+        "redirect_to": redirect_to
+    })
 
-    if forwarded_host:
-        scheme = forwarded_proto or "https"
-        return f"{scheme}://{forwarded_host}".rstrip("/")
+    return jsonify({
+        "success": True,
+        "url": f"{supabase_auth_endpoint('authorize')}?{query}",
+        "redirect_to": redirect_to
+    })
 
-    return request.url_root.rstrip("/")
 
-
+# Backward-compatible route name, in case any older button still calls /api/google-login.
 @app.route("/api/google-login", methods=["GET"])
 def google_login():
-    if not SUPABASE_URL:
-        return jsonify({"success": False, "error": "SUPABASE_URL is not configured."}), 500
-
-    base_url = get_public_base_url()
-    redirect_to = f"{base_url}/auth/callback"
-
-    auth_url = (
-        f"{SUPABASE_URL.rstrip('/')}/auth/v1/authorize"
-        f"?provider=google"
-        f"&redirect_to={quote(redirect_to, safe='')}"
-        f"&scopes={quote('email profile', safe='')}"
-    )
-
-    return redirect(auth_url)
+    return google_login_start()
 
 
-@app.route("/api/google-complete", methods=["POST"])
-def google_complete():
-    payload = request.get_json(silent=True) or {}
-    access_token = payload.get("access_token")
-    code = payload.get("code")
+@app.route("/api/auth/google/callback", methods=["GET"])
+def google_login_callback():
+    return """<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>toxeye Google sign-in</title>
+    <style>
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #211a16; color: #f2ece5; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }
+        .card { width: min(24rem, calc(100% - 2rem)); border: 1.5px solid rgba(120, 94, 78, 0.65); border-radius: 1.25rem; padding: 1.5rem; background: rgba(44, 36, 31, 0.92); text-align: center; box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22); }
+        h1 { margin: 0 0 0.5rem 0; color: #caa982; font-size: 1.2rem; }
+        p { margin: 0; color: #c9b8a8; font-size: 0.88rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class=\"card\">
+        <h1>Finishing Google sign-in...</h1>
+        <p id=\"status\">You can close this popup after sign-in completes.</p>
+    </div>
 
-    try:
-        if access_token:
-            user_response = supabase.auth.get_user(access_token)
+    <script>
+        async function finishGoogleLogin() {
+            const statusEl = document.getElementById('status');
+            const hashParams = new URLSearchParams(window.location.hash.slice(1));
+            const queryParams = new URLSearchParams(window.location.search);
 
-            if not user_response.user:
-                return jsonify({"success": False, "error": "Could not verify Google user."}), 401
+            const error = hashParams.get('error_description') || hashParams.get('error') || queryParams.get('error_description') || queryParams.get('error');
+            if (error) {
+                statusEl.textContent = error;
+                if (window.opener) window.opener.postMessage({type: 'toxeye-google-login-result', success: false, error}, window.location.origin);
+                return;
+            }
 
-            user_email = user_response.user.email
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
 
-        elif code:
-            auth_response = supabase.auth.exchange_code_for_session({
-                "auth_code": code
-            })
+            if (!accessToken) {
+                const missingTokenMessage = 'Google sign-in did not return an access token. Check the Supabase Google provider and redirect URL settings.';
+                statusEl.textContent = missingTokenMessage;
+                if (window.opener) window.opener.postMessage({type: 'toxeye-google-login-result', success: false, error: missingTokenMessage}, window.location.origin);
+                return;
+            }
 
-            if not auth_response.user:
-                return jsonify({"success": False, "error": "Could not complete Google login."}), 401
+            try {
+                const response = await fetch('/api/auth/google/complete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({access_token: accessToken, refresh_token: refreshToken})
+                });
+                const result = await response.json();
+                if (window.opener) window.opener.postMessage({type: 'toxeye-google-login-result', success: result.success, error: result.error || '', user: result.user || null}, window.location.origin);
+                statusEl.textContent = result.success ? 'Google sign-in complete. Closing popup...' : (result.error || 'Google sign-in failed.');
+                if (result.success) window.close();
+            } catch (networkError) {
+                const message = 'Could not finish Google sign-in.';
+                statusEl.textContent = message;
+                if (window.opener) window.opener.postMessage({type: 'toxeye-google-login-result', success: false, error: message}, window.location.origin);
+            }
+        }
+        finishGoogleLogin();
+    </script>
+</body>
+</html>"""
 
-            user_email = auth_response.user.email
 
-        else:
-            return jsonify({"success": False, "error": "Missing Google login token or code."}), 400
-
-        session["user_email"] = user_email
-
-        return jsonify({
-            "success": True,
-            "message": "Google login completed.",
-            "user": {"email": user_email}
-        })
-
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-
+# Backward-compatible callback route. Supabase should use /api/auth/google/callback, but this keeps old settings from breaking.
 @app.route("/auth/callback", methods=["GET"])
 def auth_callback():
-    code = request.args.get("code")
-    error = request.args.get("error_description") or request.args.get("error")
+    return google_login_callback()
 
-    if error:
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <body style="font-family: sans-serif; padding: 2rem;">
-            <h3>Google login failed</h3>
-            <p>{error}</p>
-            <p><a href="/">Back to app</a></p>
-        </body>
-        </html>
-        """, 400
 
-    if not code:
-        return """
-        <!DOCTYPE html>
-        <html>
-        <body style="font-family: sans-serif; padding: 2rem;">
-            <h3>Google login failed</h3>
-            <p>Supabase did not return a login code. Check that the Google provider is enabled and the redirect URL is allowed.</p>
-            <p><a href="/">Back to app</a></p>
-        </body>
-        </html>
-        """, 400
+@app.route("/api/auth/google/complete", methods=["POST"])
+def google_login_complete():
+    payload = request.get_json(silent=True) or {}
+    access_token = payload.get("access_token") or ""
+
+    if not supabase_is_configured():
+        return jsonify({"success": False, "error": "Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file."}), 500
+    if not access_token:
+        return jsonify({"success": False, "error": "Missing Google access token from Supabase."}), 400
 
     try:
-        auth_response = supabase.auth.exchange_code_for_session({
-            "auth_code": code
-        })
+        response = httpx.get(
+            supabase_auth_endpoint("user"),
+            headers=supabase_headers(access_token),
+            timeout=SUPABASE_REQUEST_TIMEOUT
+        )
+    except httpx.RequestError as e:
+        return jsonify({"success": False, "error": f"Could not verify Google login with Supabase: {str(e)}"}), 502
 
-        if not auth_response.user or not auth_response.user.email:
-            return """
-            <!DOCTYPE html>
-            <html>
-            <body style="font-family: sans-serif; padding: 2rem;">
-                <h3>Google login failed</h3>
-                <p>Could not verify the Google user.</p>
-                <p><a href="/">Back to app</a></p>
-            </body>
-            </html>
-            """, 401
+    if response.status_code >= 400:
+        return jsonify({"success": False, "error": supabase_error_message(response, "Could not verify this Google login with Supabase.")}), response.status_code
 
-        session["user_email"] = auth_response.user.email
-        return redirect("/")
-
-    except Exception as e:
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <body style="font-family: sans-serif; padding: 2rem;">
-            <h3>Google login failed</h3>
-            <p>{str(e)}</p>
-            <p><a href="/">Back to app</a></p>
-        </body>
-        </html>
-        """, 500
+    user = response.json()
+    stored_user = store_authenticated_user(user, provider="google")
+    return jsonify({"success": True, "message": "Logged in with Google successfully.", "user": {"email": stored_user.get("email")}})
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -1118,7 +1151,8 @@ def current_user():
         "success": True,
         "logged_in": True,
         "user": {
-            "email": session.get("user_email")
+            "email": session.get("user_email"),
+            "provider": session.get("auth_provider", "email")
         }
     })
 
