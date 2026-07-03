@@ -3085,59 +3085,98 @@ async function logoutUser() {
     }
 }
 
-function startGoogleLogin() {
-    setAuthMessage("Redirecting to Google login...");
-    window.location.href = "/api/google-login";
-}
+let googleLoginPopup = null;
+let googleLoginFinished = false;
 
-// FAIL-SAFE INITIALIZATION INTERCEPTOR:
-// Processes authentication query configurations contextually if they drop back onto the home route layout view.
-window.addEventListener("DOMContentLoaded", async function() {
-    const queryParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    
-    const code = queryParams.get("code");
-    const accessToken = hashParams.get("access_token");
-    
-    if (code || accessToken) {
-        setAuthMessage("Finishing secure synchronization check...");
-        try {
-            const response = await fetch("/api/google-complete", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    access_token: accessToken,
-                    code: code
-                })
-            });
-            const result = await response.json();
-            if (result.success) {
-                setAuthMessage("Logged in with Google.");
-                window.history.replaceState({}, document.title, window.location.pathname);
-                refreshAuthUI();
-            } else {
-                setAuthMessage(result.error || "Google sync loop configuration mismatch.", true);
-            }
-        } catch (e) {
-            setAuthMessage("Redirection validation handshake timed out.", true);
-        }
-    }
-});
-
-window.addEventListener("message", function(event) {
+window.addEventListener('message', async function handleGoogleLoginMessage(event) {
     if (event.origin !== window.location.origin) {
         return;
     }
 
-    if (event.data && event.data.type === "google-login-complete") {
-        if (event.data.success) {
-            setAuthMessage("Logged in with Google.");
-            refreshAuthUI();
-        } else {
-            setAuthMessage(event.data.error || "Google login failed.", true);
-        }
+    if (!event.data || event.data.type !== 'toxeye-google-login-result') {
+        return;
     }
+
+    googleLoginFinished = true;
+
+    if (googleLoginPopup && !googleLoginPopup.closed) {
+        googleLoginPopup.close();
+    }
+
+    if (!event.data.success) {
+        setAuthMessage(event.data.error || "Google sign-in failed.", true);
+        return;
+    }
+
+    await refreshAuthUI();
+    setAuthMessage("Logged in with Google successfully.");
 });
+
+async function startGoogleLogin() {
+    setAuthMessage("Opening Google sign-in...");
+
+    googleLoginFinished = false;
+
+    const popupWidth = 520;
+    const popupHeight = 680;
+    const popupLeft = Math.max(0, window.screenX + (window.outerWidth - popupWidth) / 2);
+    const popupTop = Math.max(0, window.screenY + (window.outerHeight - popupHeight) / 2);
+
+    googleLoginPopup = window.open(
+        'about:blank',
+        'toxeye-google-login',
+        `width=${popupWidth},height=${popupHeight},left=${popupLeft},top=${popupTop},resizable=yes,scrollbars=yes`
+    );
+
+    if (!googleLoginPopup) {
+        setAuthMessage("Popup blocked. Allow popups for this site, then try Google sign-in again.", true);
+        return;
+    }
+
+    try {
+        googleLoginPopup.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><title>Opening Google sign-in</title></head>
+            <body style="font-family: system-ui; background: #211a16; color: #f2ece5; display: grid; min-height: 100vh; place-items: center; margin: 0;">
+                <p>Opening Google sign-in...</p>
+            </body>
+            </html>
+        `);
+        googleLoginPopup.document.close();
+    } catch (error) {
+        // Some browsers block writing to the popup. The login can still continue.
+    }
+
+    const popupClosedWatcher = window.setInterval(function checkGooglePopupClosed() {
+        if (!googleLoginPopup || googleLoginPopup.closed) {
+            window.clearInterval(popupClosedWatcher);
+
+            if (!googleLoginFinished) {
+                setAuthMessage("Google sign-in popup was closed before login finished.", true);
+            }
+        }
+    }, 700);
+
+    try {
+        const response = await fetch('/api/auth/google/start', {cache: 'no-store'});
+        const result = await response.json();
+
+        if (!result.success || !result.url) {
+            googleLoginFinished = true;
+            googleLoginPopup.close();
+            setAuthMessage(result.error || "Could not start Google sign-in.", true);
+            return;
+        }
+
+        googleLoginPopup.location.href = result.url;
+
+    } catch (error) {
+        googleLoginFinished = true;
+        googleLoginPopup.close();
+        setAuthMessage("Network error while starting Google sign-in.", true);
+    }
+}
     </script>
 </body>
 </html>
